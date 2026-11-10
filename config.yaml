@@ -1,0 +1,40 @@
+name: "Freebuff CLI"
+version: "0.2.0"
+slug: "freebuff"
+description: "Agent de code Freebuff dans un terminal web, pour coder vos add-ons et vos dépôts Git"
+url: "https://github.com/pier-andre/freebuff-ha-addon"
+arch:
+  - amd64
+  - aarch64
+init: false
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+ports:
+  11436/tcp: 11436
+ports_description:
+  11436/tcp: "API OpenAI compatible (réseau local)"
+panel_icon: "mdi:robot-happy-outline"
+panel_title: "Freebuff"
+startup: application
+map:
+  - local_apps:rw
+  - homeassistant_config:rw
+  - share:rw
+options:
+  git_name: ""
+  git_email: ""
+  extra_packages: []
+  api_enabled: false
+  freebuff_auth_tokens: ""
+  api_keys: ""
+  github_token: ""
+schema:
+  git_name: str?
+  git_email: email?
+  extra_packages:
+    - str
+  api_enabled: bool
+  freebuff_auth_tokens: password?
+  api_keys: password?
+  github_token: password?
