@@ -6,6 +6,10 @@ modifie et teste des fichiers dans le dossier où vous le lancez.
 ## Première connexion
 
 1. Ouvrez **Freebuff** dans la barre latérale de Home Assistant.
+
+Le panneau est réservé aux comptes **administrateurs** (`panel_admin: true`) : le terminal tourne
+en root avec `/homeassistant` et `/share` montés en lecture/écriture, il n'est donc pas proposé aux
+autres comptes de l'instance, qui ne voient pas l'icône.
 2. Tapez `freebuff login` puis Entrée.
 3. Un lien `https://freebuff.com/login?...` s'affiche. Copiez-le (ou cliquez avec Ctrl/Cmd + clic)
    et ouvrez-le sur votre téléphone ou votre ordinateur, puis connectez-vous.
