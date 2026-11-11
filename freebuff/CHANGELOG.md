@@ -5,6 +5,11 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.2
+
+- Icône du panneau remplacée : `mdi:console-line` (une invite de terminal) au lieu de
+  `mdi:robot-happy-outline`, pour que l'icône de la barre latérale dise ce que fait l'add-on.
+
 ## 0.2.1
 
 - L'add-on vit maintenant dans le dossier `freebuff/` du dépôt, à côté de son `CHANGELOG.md` : c'est
