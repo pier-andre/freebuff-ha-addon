@@ -1,0 +1,63 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":timezone(Europe/Paris)"],
+  "schedule": ["before 7am on monday"],
+  "prHourlyLimit": 2,
+  "bumpVersions": [
+    {
+      "description": "Chaque mise à jour incrémente le patch de l'add-on (0.2.1 -> 0.2.2)",
+      "filePatterns": ["*/config.yaml"],
+      "matchStrings": ["(?:^|\\n)version:[ \\t]*\"?(?<version>\\d+\\.\\d+\\.\\d+)\"?"],
+      "bumpType": "patch"
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": [
+      "node /opt/renovate-scripts/changelog.mjs {{{depName}}} {{{currentVersion}}} {{{newVersion}}} {{{updateType}}} addons"
+    ],
+    "fileFilters": ["**/CHANGELOG.md"],
+    "executionMode": "branch"
+  },
+  "prBodyNotes": [
+    "{{#if isMajor}}:warning: **Mise à jour majeure** : vérifiez les notes de version avant de fusionner.{{/if}}",
+    "Cette PR incrémente le `version:` de `freebuff/config.yaml` et ajoute une ligne dans `freebuff/CHANGELOG.md`. Après fusion, Home Assistant proposera la mise à jour (menu ⋮ → Vérifier les mises à jour)."
+  ],
+  "packageRules": [
+    {
+      "description": "Regrouper les correctifs dans une seule PR",
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "groupName": "correctifs groupés"
+    },
+    {
+      "description": "Une seule PR pour toutes les GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "L'image de base Debian suit une étiquette mobile (bookworm) : aucune version à suivre",
+      "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Version de Node.js passée en ARG dans le Dockerfile",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStrings": ["ARG NODE_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "nodejs/node",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Version de ttyd compilée depuis les sources dans le Dockerfile",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStrings": [
+        "git clone --depth 1 --branch (?<currentValue>\\d+\\.\\d+\\.\\d+) https://github\\.com/tsl0922/ttyd\\.git"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "tsl0922/ttyd"
+    }
+  ]
+}

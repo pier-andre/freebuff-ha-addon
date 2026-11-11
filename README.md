@@ -13,18 +13,30 @@ et peut aussi exposer un proxy API compatible OpenAI sur le réseau local.
 
 ## Installation
 
-1. **Personnalisez les trois fichiers** avant de publier :
-   - `repository.yaml` : votre nom, l'URL de votre dépôt, votre e-mail ;
-   - `freebuff/config.yaml` : l'URL (`url:`) et éventuellement la version ;
-   - `freebuff/DOCS.md` : rien d'obligatoire, c'est la doc affichée dans l'onglet Documentation.
+L'add-on vit dans le dossier `freebuff/` de ce dépôt, et son nom est son identifiant :
+`freebuff/config.yaml`, `freebuff/Dockerfile`, `freebuff/run.sh`, `freebuff/DOCS.md` et
+`freebuff/CHANGELOG.md` doivent rester ensemble. `repository.yaml` et `renovate.json` restent à la
+racine du dépôt.
 
-2. Poussez ce dossier sur GitHub (public ou privé avec token, mais Home Assistant doit pouvoir le lire).
+1. Dans Home Assistant : **Paramètres → Modules complémentaires → Boutique des modules complémentaires**
+   → menu ⋮ → **Dépôts** → collez `https://github.com/pier-andre/freebuff-ha-addon` → **Ajouter**.
+   Le dépôt doit rester **public** : la boutique clone sans identifiants.
 
-3. Dans Home Assistant : **Paramètres → Modules complémentaires → Boutique des modules complémentaires**
-   → menu ⋮ → **Dépôts** → collez l'URL de votre dépôt GitHub → **Ajouter**.
-
-4. L'add-on « Freebuff CLI » apparaît dans la boutique. **Installer**, puis **Démarrer**.
+2. L'add-on « Freebuff CLI » apparaît dans la boutique. **Installer**, puis **Démarrer**.
    (Comptez plusieurs minutes pour la première installation : Node.js + Freebuff sont téléchargés.)
+
+3. Home Assistant installe l'add-on sous le nom `<empreinte>_freebuff` (l'empreinte vient de l'URL du
+   dépôt), donc ses données vivent dans `/data/apps/data/<empreinte>_freebuff`. Si vous passez d'une
+   copie locale installée depuis `/addons`, déplacez ce dossier avant de démarrer la nouvelle
+   installation, sinon vous repartez d'un `/data` vide (historique de conversations et configuration
+   Git compris).
+
+### Mises à jour
+
+Le fichier `renovate.json` à la racine du dépôt est lu par l'add-on
+[Renovate](https://github.com/pier-andre/renovate-ha-addon) : une mise à jour de dépendance arrive en
+pull request avec le `version:` de `freebuff/config.yaml` incrémenté et une ligne ajoutée dans
+`freebuff/CHANGELOG.md`. Après fusion, la boutique la propose au prochain « Vérifier les mises à jour ».
 
 5. Ouvrez **Freebuff** dans la barre latérale, puis tapez `freebuff login` et suivez le lien affiché
    sur votre téléphone ou votre ordinateur. Revenez dans le terminal : c'est connecté.

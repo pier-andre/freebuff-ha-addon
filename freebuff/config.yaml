@@ -1,8 +1,8 @@
 name: "Freebuff CLI"
-version: "0.2.0"
+version: "0.2.1"
 slug: "freebuff"
 description: "Agent de code Freebuff dans un terminal web, pour coder vos add-ons et vos dépôts Git"
-url: "https://github.com/pier-andre/freebuff-ha-addon"
+url: "https://github.com/pier-andre/freebuff-ha-addon/tree/main/freebuff"
 arch:
   - amd64
   - aarch64
