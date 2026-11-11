@@ -3,6 +3,8 @@
 Un add-on qui fournit la CLI [Freebuff](https://freebuff.com/cli) dans un terminal web intégré à Home Assistant,
 et peut aussi exposer un proxy API compatible OpenAI sur le réseau local.
 
+[![Ouvrir votre instance Home Assistant et afficher le dialogue d’ajout du dépôt avec l’URL pré-remplie.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon) [![Ouvrir votre instance Home Assistant et afficher la page de l’add-on Freebuff.](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=dc337d8e_freebuff&repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon)
+
 ## Ce que fait l'add-on
 
 - installe Node.js + `freebuff` (CLI officielle, toujours la dernière version au moment du build) ;
@@ -25,11 +27,13 @@ racine du dépôt.
 2. L'add-on « Freebuff CLI » apparaît dans la boutique. **Installer**, puis **Démarrer**.
    (Comptez plusieurs minutes pour la première installation : Node.js + Freebuff sont téléchargés.)
 
-3. Home Assistant installe l'add-on sous le nom `<empreinte>_freebuff` (l'empreinte vient de l'URL du
-   dépôt), donc ses données vivent dans `/data/apps/data/<empreinte>_freebuff`. Si vous passez d'une
-   copie locale installée depuis `/addons`, déplacez ce dossier avant de démarrer la nouvelle
-   installation, sinon vous repartez d'un `/data` vide (historique de conversations et configuration
-   Git compris).
+3. Home Assistant installe l'add-on sous le nom `dc337d8e_freebuff` : le préfixe `dc337d8e` est le
+   début du SHA-1 de l'URL du dépôt, calculé sur l'URL telle que saisie (sans `/` final ni `.git`,
+   sinon le préfixe change). Ses données vivent donc dans `/data/apps/data/dc337d8e_freebuff`. Si vous
+   passez d'une copie locale installée depuis `/addons` (identifiant `local_freebuff`), déplacez
+   `/data/apps/data/local_freebuff` vers `/data/apps/data/dc337d8e_freebuff` avant de démarrer la
+   nouvelle installation, sinon vous repartez d'un `/data` vide (historique de conversations et
+   configuration Git compris).
 
 ### Mises à jour
 
