@@ -5,6 +5,12 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.3
+
+- Le panneau est désormais réservé aux comptes administrateurs (`panel_admin: true`). Le terminal
+  donne un accès root au dossier de configuration de Home Assistant ; il n'a pas à être ouvert aux
+  autres comptes de l'instance. Reconstruction nécessaire pour que le réglage prenne effet.
+
 ## 0.2.2
 
 - Icône du panneau remplacée : `mdi:console-line` (une invite de terminal) au lieu de
