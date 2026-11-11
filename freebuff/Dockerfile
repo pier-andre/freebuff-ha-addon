@@ -2,7 +2,7 @@
 # Base Debian (glibc) : le binaire natif de Freebuff n'est pas prévu pour Alpine/musl.
 ARG FREEBUFF2API_REF=main
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:bookworm
-FROM golang:1.23-bookworm AS api-builder
+FROM golang:1.27-bookworm AS api-builder
 ARG FREEBUFF2API_REF
 RUN git clone --depth 1 --branch "${FREEBUFF2API_REF}" https://github.com/Quorinex/Freebuff2API.git /src
 WORKDIR /src

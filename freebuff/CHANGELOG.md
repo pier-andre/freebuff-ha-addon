@@ -5,6 +5,7 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+- 2026-11-11 — `golang` 1.23 → 1.27 (mise à jour mineure)
 ## 0.2.1
 
 - L'add-on vit maintenant dans le dossier `freebuff/` du dépôt, à côté de son `CHANGELOG.md` : c'est
