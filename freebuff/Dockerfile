@@ -4,9 +4,16 @@ ARG FREEBUFF2API_REF=main
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:bookworm
 FROM golang:1.23-bookworm AS api-builder
 ARG FREEBUFF2API_REF
+COPY patches /tmp/patches
 RUN git clone --depth 1 --branch "${FREEBUFF2API_REF}" https://github.com/Quorinex/Freebuff2API.git /src
 WORKDIR /src
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /Freebuff2API .
+# Correctifs locaux (voir patches/README.md) : liste de modèles lue depuis le
+# catalogue Freebuff et reconstruction du run quand la session free est refusée.
+RUN for p in /tmp/patches/*.patch; do \
+        echo "application de ${p}"; \
+        git apply --whitespace=nowarn -p1 "${p}"; \
+    done \
+    && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /Freebuff2API .
 
 # ttyd n'est pas disponible dans les dépôts Debian Bookworm. Le compiler depuis
 # une version publiée évite de dépendre d'un paquet absent.
