@@ -5,6 +5,11 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.6
+- 2026-11-12 — `nodejs/node` 22.23.4 → 26.13.0 (mise à jour majeure)
+  - Node.js 25 et suivants lient leurs binaires Linux à `libatomic` : l'image installe désormais `libatomic1`, sans quoi `node` ne démarre pas.
+
+## 0.2.5
 - 2026-11-12 — `nodejs/node` 22.11.0 → 22.23.4 (mise à jour mineure)
 
 ## 0.2.4
