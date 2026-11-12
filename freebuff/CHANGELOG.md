@@ -5,6 +5,8 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+- 2026-11-12 — `nodejs/node` 22.11.0 → 22.23.4 (mise à jour mineure)
+
 ## 0.2.4
 - fix installation initiale github avec chemin manquant bloquant la première exécution
 
