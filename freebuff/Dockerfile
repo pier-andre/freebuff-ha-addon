@@ -28,7 +28,7 @@ FROM ${BUILD_FROM}
 
 ARG BUILD_ARCH
 ARG BUILD_VERSION
-ARG NODE_VERSION=22.23.4
+ARG NODE_VERSION=26.13.0
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -36,12 +36,15 @@ ENV FREEBUFF_CONFIG_DIR=/data/freebuff \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
+# libatomic1 : depuis Node.js 25, les binaires Linux officiels en dépendent.
+# Sans ce paquet, `node` ne démarre pas ("libatomic.so.1: cannot open shared object file").
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
         jq \
+        libatomic1 \
         less \
         nano \
         libjson-c5 \
