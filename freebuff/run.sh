@@ -35,8 +35,6 @@ export HOME=/data/freebuff
 umask 077
 mkdir -p "${HOME}/.config/manicode"
 
- # Identité Git, utilisée par les commits de l'agent
- if config_has_value 'git_name'; then
 # Identité Git, utilisée par les commits de l'agent
 if config_has_value 'git_name'; then
     git config --global user.name "$(config_value 'git_name')"
