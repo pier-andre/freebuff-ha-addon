@@ -30,7 +30,13 @@ log_info "Démarrage du terminal Freebuff (Ingress, port 8099)"
 # helper d'identifiants sont écrits dans /root/.gitconfig, que les terminaux de
 # l'agent (HOME=/data/freebuff) n'utilisent pas.
 export HOME=/data/freebuff
+# 'git config --global' écrit dans $HOME : le dossier doit exister avant,
+# sinon un /data neuf fait échouer le script (could not lock .gitconfig).
+umask 077
+mkdir -p "${HOME}/.config/manicode"
 
+ # Identité Git, utilisée par les commits de l'agent
+ if config_has_value 'git_name'; then
 # Identité Git, utilisée par les commits de l'agent
 if config_has_value 'git_name'; then
     git config --global user.name "$(config_value 'git_name')"
