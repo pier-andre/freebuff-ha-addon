@@ -5,6 +5,9 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.4
+- fix installation initiale github avec chemin manquant bloquant la première exécution
+
 ## 0.2.3
 
 - Le panneau est désormais réservé aux comptes administrateurs (`panel_admin: true`). Le terminal
