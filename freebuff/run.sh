@@ -118,23 +118,32 @@ else
     log_info "API Home Assistant via le proxy Supervisor (${HA_URL})"
 fi
 
-# --- Serveur MCP de Home Assistant (facultatif) ------------------------------
+# --- Serveurs MCP (facultatifs) ----------------------------------------------
 # mcp-config.sh écrit /local_apps/.agents/mcp.json (format `mcpServers`) pour que
-# la CLI expose les outils MCP de Home Assistant : tableaux de bord, fichiers YAML
-# avec sauvegarde, `check_config`, traces, statistiques. Le fichier suit les
-# options (`mcp_url`, `mcp_token`), n'est écrit que si le serveur répond, et reste
-# intact s'il a été personnalisé ; l'API REST demeure la voie de repli.
+# la CLI expose les outils MCP de Home Assistant (tableaux de bord, fichiers YAML
+# avec sauvegarde, `check_config`, traces, statistiques) et, si vous l'activez,
+# ceux d'un add-on n8n (lecture et édition de workflows). Deux entrées au plus,
+# chacune avec sa bascule : `ha_mcp_*` et `n8n_mcp_*`. Le fichier suit les
+# options, n'est écrit que pour les serveurs qui répondent, et reste intact s'il
+# a été personnalisé ; l'API REST demeure la voie de repli.
 if ! bash /usr/local/share/freebuff/mcp-config.sh; then
     log_warning "Configuration MCP non appliquée : l'agent garde l'API REST"
 fi
 
 # `mcp-config.sh` tourne dans un sous-shell : son export ne remonte pas jusqu'ici.
-# On exporte donc `mcp_token` dans le shell dont hérite le terminal, pour que
-# l'en-tête `Bearer $MCP_TOKEN` écrit dans .agents/mcp.json soit résolu.
-mcp_token_opt="$(config_value 'mcp_token')"
-if [[ -n "${mcp_token_opt}" ]]; then
-    export MCP_TOKEN="${mcp_token_opt}"
-    log_info "Jeton MCP chargé pour le terminal (mcp_token)"
+# On exporte donc les jetons MCP dans le shell dont hérite le terminal, pour que
+# les en-têtes `Bearer $HA_MCP_TOKEN` et `Bearer $N8N_MCP_TOKEN` écrits dans
+# .agents/mcp.json soient résolus. Le jeton longue durée de Home Assistant reste
+# `$HOME_ASSISTANT_TOKEN`, exporté plus haut.
+ha_mcp_token_opt="$(config_value 'ha_mcp_token')"
+if [[ -n "${ha_mcp_token_opt}" ]]; then
+    export HA_MCP_TOKEN="${ha_mcp_token_opt}"
+    log_info "Jeton MCP Home Assistant chargé pour le terminal (ha_mcp_token)"
+fi
+n8n_mcp_token_opt="$(config_value 'n8n_mcp_token')"
+if [[ -n "${n8n_mcp_token_opt}" ]]; then
+    export N8N_MCP_TOKEN="${n8n_mcp_token_opt}"
+    log_info "Jeton MCP n8n chargé pour le terminal (n8n_mcp_token)"
 fi
 
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"

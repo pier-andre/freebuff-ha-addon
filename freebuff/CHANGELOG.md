@@ -5,6 +5,21 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.14
+- 2026-11-13 — Deux serveurs MCP peuvent cohabiter dans `/local_apps/.agents/mcp.json` : Home
+  Assistant (`homeassistant`) et un add-on n8n (`n8n`). Seuls les serveurs activés et joignables sont
+  écrits ; un serveur en panne n'empêche plus l'autre d'être disponible.
+- Options renommées `mcp_url`/`mcp_token` → `ha_mcp_url`/`ha_mcp_token`, et nouvelles
+  `n8n_mcp_url`/`n8n_mcp_token`. Les valeurs enregistrées sous les anciens noms sont reprises au
+  premier démarrage, avec un avertissement invitant à les recopier.
+- Bascule par serveur : `ha_mcp_enabled` (défaut `true`) et `n8n_mcp_enabled` (défaut `false`)
+  mettent un serveur en pause sans effacer son URL ni son jeton. Les deux à `false` retirent le
+  fichier géré, après sauvegarde dans `/data/mcp-backups`.
+- Jetons accessibles au terminal sous `HA_MCP_TOKEN` et `N8N_MCP_TOKEN` (le jeton longue durée reste
+  `HOME_ASSISTANT_TOKEN`) ; un serveur d'une autre origine ne reçoit jamais le jeton Home Assistant.
+- Journal plus précis : un `HTTP 404` sur `n8n_url` rappelle que l'accès MCP doit être activé côté
+  n8n et que l'URL finit par `/mcp-server/http`.
+
 ## 0.2.13
 - 2026-11-13 — Jeton MCP : sur la même origine que Home Assistant, le fichier référence de nouveau
   `$HOME_ASSISTANT_TOKEN`, que `run.sh` exporte toujours. Depuis le passage à `mcp-config.sh`,

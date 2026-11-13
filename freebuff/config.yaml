@@ -1,5 +1,5 @@
 name: "Freebuff CLI"
-version: "0.2.13"
+version: "0.2.14"
 slug: "freebuff"
 description: "Agent de code Freebuff dans un terminal web, pour coder vos add-ons et vos dépôts Git"
 url: "https://github.com/pier-andre/freebuff-ha-addon/tree/main/freebuff"
@@ -30,8 +30,12 @@ options:
   home_assistant_url: ""
   home_assistant_port: 8123
   home_assistant_token: ""
-  mcp_url: ""
-  mcp_token: ""
+  ha_mcp_enabled: true
+  ha_mcp_url: ""
+  ha_mcp_token: ""
+  n8n_mcp_enabled: false
+  n8n_mcp_url: ""
+  n8n_mcp_token: ""
 schema:
   git_name: str?
   git_email: email?
@@ -41,5 +45,9 @@ schema:
   home_assistant_url: str?
   home_assistant_port: port?
   home_assistant_token: password?
-  mcp_url: str?
-  mcp_token: password?
+  ha_mcp_enabled: bool
+  ha_mcp_url: str?
+  ha_mcp_token: password?
+  n8n_mcp_enabled: bool
+  n8n_mcp_url: str?
+  n8n_mcp_token: password?

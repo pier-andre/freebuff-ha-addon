@@ -14,8 +14,9 @@ modification de production.
 | `/data` | données persistantes de cet add-on (session Freebuff, options) | lecture/écriture |
 
 Variables d'environnement disponibles : `HA_URL` et `HA_TOKEN` (jeton longue durée d'un compte
-dédié, ou jeton éphémère du proxy Supervisor), `HA_PORT`, `GH_TOKEN` pour `git`, et `MCP_TOKEN`
-quand l'option `mcp_token` est renseignée.
+dédié, ou jeton éphémère du proxy Supervisor), `HA_PORT`, `GH_TOKEN` pour `git`, ainsi que
+`HA_MCP_TOKEN` et `N8N_MCP_TOKEN` quand les options `ha_mcp_token` et `n8n_mcp_token` sont
+renseignées.
 
 ## Règles absolues
 

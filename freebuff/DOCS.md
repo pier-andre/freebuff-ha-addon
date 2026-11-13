@@ -63,12 +63,20 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `home_assistant_url` | Adresse de votre instance, ex. `http://homeassistant:8123` ou `https://ha.exemple.ca` (facultatif, défaut `http://homeassistant:8123`) |
 | `home_assistant_port` | Port de l'API si l'URL n'en contient pas (facultatif, défaut `8123`) |
 | `home_assistant_token` | Jeton d'accès longue durée d'un compte Home Assistant dédié (facultatif, secret) |
-| `mcp_url` | URL d'un serveur MCP autre que `/api/mcp` de votre instance, ex. HA-MCP sur `http://homeassistant.local:9583/private_…` (facultatif) |
-| `mcp_token` | Jeton demandé par ce serveur MCP, s'il en exige un (facultatif, secret) |
+| `ha_mcp_enabled` | Bascule du serveur MCP Home Assistant (défaut `true`) |
+| `ha_mcp_url` | URL du serveur MCP de Home Assistant autre que `/api/mcp` de votre instance, ex. HA-MCP sur `http://homeassistant.local:9584/private_…` (facultatif) |
+| `ha_mcp_token` | Jeton demandé par ce serveur, s'il diffère du jeton longue durée (facultatif, secret) |
+| `n8n_mcp_enabled` | Bascule du serveur MCP d'un add-on n8n (défaut `false`) |
+| `n8n_mcp_url` | URL du serveur MCP n8n, ex. `http://6560bdea-hass-n8n:5678/mcp-server/http` (facultatif) |
+| `n8n_mcp_token` | Clé API n8n utilisée comme jeton `Bearer` (facultatif, secret) |
 
-Les trois options `home_assistant_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on après
-les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — le jeton ne vit que
-dans l'environnement du terminal, comme `github_token`.
+Les options `home_assistant_*` et `*_mcp_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on
+après les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — les jetons ne
+vivent que dans l'environnement du terminal, comme `github_token`.
+
+Les bascules `ha_mcp_enabled` et `n8n_mcp_enabled` servent exactement à cela : mettre un serveur en
+pause sans effacer son URL ni son jeton. Une bascule à `false` retire l'entrée du fichier MCP et
+laisse les identifiants en place pour la réactivation.
 
 ## Téléphone et tablette
 
@@ -138,34 +146,47 @@ La CLI Freebuff y voit alors les outils MCP de Home Assistant — édition des t
 lecture/écriture des fichiers YAML avec sauvegarde intégrée, `check_config`, traces d'automatisation,
 statistiques, recherche d'entités — **en plus** de l'API REST.
 
+Deux serveurs peuvent cohabiter, chacun avec sa bascule : Home Assistant (`ha_mcp_*`, écrit sous le
+nom `homeassistant`) et n8n (`n8n_mcp_*`, écrit sous le nom `n8n`). Seuls les serveurs activés et
+joignables apparaissent dans le fichier ; l'un peut être en panne sans priver l'agent de l'autre.
+
 L'API REST reste le repli : sans serveur MCP joignable, aucun fichier n'est écrit et l'agent
 travaille exactement comme avant. Rien n'est requis dans les options pour les deux premiers cas.
 
 | Serveur MCP | URL | Jeton |
 | --- | --- | --- |
-| Intégration intégrée « Model Context Protocol Server » (HA 2025.2+) | `http://homeassistant:8123/api/mcp` | `home_assistant_token` — **défaut, rien à configurer** |
+| Intégration intégrée **Model Context Protocol** (HA 2025.2+, [page officielle](https://www.home-assistant.io/integrations/mcp_server/)) | `http://homeassistant:8123/api/mcp`, ou une URL par jeu d'outils (ex. `/api/mcp/assist`) | `home_assistant_token` — **défaut, rien à configurer** |
 | Composant tiers exposant `/api/mcp` | idem | idem |
-| Intégration **MCP Server (HTTP Transport)** (`mcp_server_http_transport`) | `http://homeassistant.local:8123/api/mcp_http` | `home_assistant_token` |
-| App **HA-MCP** du Marketplace (`homeassistant-ai/ha-mcp`, port 9583) | `http://homeassistant.local:9583/<chemin secret>` (affiché dans les journaux de l'app) | aucun : le chemin secret *est* l'authentification |
-| `hass-mcp` (`/api/hass_mcp`) ou `ha-mcp-web` (port 8086, `/mcp`) | l'URL exacte du serveur | `mcp_token` si le serveur en exige un |
+| Intégration **MCP Server (HTTP Transport)** (`mcp_server_http_transport`, dépôt Ganhammar) | `http://homeassistant.local:8123/api/mcp_http` | `home_assistant_token` |
+| Composant **HA-MCP** in-process (`ha_mcp_tools`, HACS/Marketplace, HA 2026.11+) | URL de connexion de l'entrée *Configure* : `http://<ip>:9584/private_<secret>` ou `https://<domaine>/api/webhook/<id>` | aucun en mode « Secret URL » |
+| App **HA-MCP** (`homeassistant-ai/ha-mcp`, port 9584) | `http://homeassistant.local:9584/private_<secret>` (affiché dans les journaux de l'app) | aucun : le chemin secret *est* l'authentification |
+| `hass-mcp` (`/api/hass_mcp`) ou `ha-mcp-web` (port 8086, `/mcp`) | l'URL exacte du serveur | `ha_mcp_token` si le serveur en exige un |
+| Add-on **n8n** (serveur MCP intégré) | `http://<slug-de-l-add-on>:5678/mcp-server/http` | `n8n_mcp_token` (clé API n8n) |
 
 - **Adresse par défaut** : `home_assistant_url` + `home_assistant_port` + `/api/mcp`. Elle convient à
   l'intégration intégrée comme aux composants qui réutilisent ce chemin, avec le même jeton.
-- **Autre serveur** : renseignez `mcp_url` (URL complète, port compris). Sans `mcp_token`, aucun
-  en-tête `Authorization` n'est envoyé vers une autre origine — voulu pour HA-MCP, où le jeton Home
-  Assistant n'a rien à faire dans un autre conteneur.
-- **Aucun secret dans le fichier** : l'en-tête contient `Bearer $HOME_ASSISTANT_TOKEN` (ou
-  `Bearer $MCP_TOKEN` pour `mcp_token`), que la CLI résout depuis l'environnement du terminal.
+- **Autre serveur** : renseignez `ha_mcp_url` (URL complète, port compris). Sans `ha_mcp_token`,
+  aucun en-tête `Authorization` n'est envoyé vers une autre origine — voulu pour HA-MCP, où le jeton
+  Home Assistant n'a rien à faire dans un autre conteneur.
+- **Aucun secret dans le fichier** : l'en-tête contient `Bearer $HOME_ASSISTANT_TOKEN`, ou
+  `Bearer $HA_MCP_TOKEN` / `Bearer $N8N_MCP_TOKEN` pour un serveur d'une autre origine, que la CLI
+  résout depuis l'environnement du terminal.
 - **Détection** : le fichier n'est écrit que si le serveur répond à une poignée de main MCP (6 s de
   délai maximum). Sinon le journal de l'add-on affiche un avertissement et l'API REST prend le relais.
 - **Sans jeton longue durée** : pas de MCP. Le proxy Supervisor (`http://supervisor/core`) ne relaie
   pas `/api/mcp` (réponse 502 constatée), alors que les routes REST fonctionnent.
-- **Port** : un `mcp_url` sans port explicite part sur le port 80. Si l'hôte est celui de Home
+- **Port** : une URL sans port explicite part sur le port 80. Si l'hôte est celui de Home
   Assistant, l'add-on complète avec `home_assistant_port` et l'écrit dans le journal ; sinon il
   vous prévient. Donnez toujours l'URL complète, port compris.
 - **Jeton** : sur la même origine que Home Assistant (même schéma, hôte et port), le jeton longue
-  durée est réutilisé sans `mcp_token`. Pour un autre conteneur, renseignez `mcp_token` : sans lui,
-  aucun en-tête n'est envoyé, donc pas de fuite du jeton Home Assistant.
+  durée est réutilisé sans `ha_mcp_token`. Pour un autre conteneur, renseignez le jeton du serveur :
+  sans lui, aucun en-tête n'est envoyé, donc pas de fuite du jeton Home Assistant.
+- **n8n** : l'add-on n8n n'est joignable que par son **nom de conteneur** (le port 5678 n'est pas
+  publié sur l'hôte) : `http://<slug>:5678/mcp-server/http`, où le slug est celui de l'URL d'ingress
+  (`http://homeassistant.local:8123/6560bdea_hass-n8n` → `6560bdea-hass-n8n`). Côté n8n, activez
+  l'accès MCP au niveau de l'instance, créez une clé API (l'OAuth demande un navigateur), et cochez
+  « Available in MCP » sur chaque workflow à rendre accessible. La création et l'édition de
+  workflows demandent n8n 2.13 ou plus récent.
 - **Fichier géré** : le fichier appartient à l'add-on tant qu'il porte sa forme exacte. Il est
   réécrit quand les options changent (empreinte dans `/data/mcp-managed.json`, copie de l'ancien
   dans `/data/mcp-backups`), et les fichiers écrits par les versions précédentes sont repris en
@@ -178,6 +199,24 @@ travaille exactement comme avant. Rien n'est requis dans les options pour les de
   lancement non interactif, `freebuff --trust-agents` l'accepte d'emblée. Si vous préférez ne rien
   charger, refusez : l'agent travaille alors avec la seule API REST, et supprimer
   `/local_apps/.agents/mcp.json` suffit à faire disparaître l'invite.
+- **Formes d'URL vérifiées** : l'intégration intégrée (`/api/mcp`, y compris une URL par jeu
+  d'outils comme `/api/mcp/assist`), **MCP Server (HTTP Transport)** de Ganhammar (`/api/mcp_http`)
+  et **HA-MCP** (app ou composant, chemin secret) produisent le même fichier `mcpServers` en
+  `type: "http"` ; seuls l'URL et l'en-tête changent.
+- **Un seul serveur par client** : HA-MCP demande explicitement de ne pas cumuler deux installations
+  du même serveur (composant, app, Docker, stdio) dans un même client — deux entrées vers le même
+  serveur provoquent des blocages. L'add-on n'en écrit jamais deux pour un même serveur ; deux
+  serveurs **différents** (Home Assistant et n8n) cohabitent sans problème.
+- **Pas de stdio** : l'add-on n'écrit que du transport HTTP. Un serveur lancé par commande
+  (`command`/`args`) n'est jamais généré, et l'ajouter à la main rend le fichier « personnalisé » :
+  il ne suit alors plus les options.
+- **HA-MCP en mode `ha_auth`** : ce mode remplace le chemin secret par une connexion Home Assistant
+  (OAuth) ; un en-tête `Bearer` n'y suffit pas. Pour un accès sans jeton, gardez le mode
+  « Secret URL » (ou le webhook).
+- **Conflit `/api/mcp`** : si l'intégration intégrée et celle de Ganhammar coexistent, Home Assistant
+  attribue `/api/mcp` à la première enregistrée — souvent l'intégrée, qui n'expose que les outils
+  Assist. Ganhammar lève alors un problème de réparation et ne sert plus que `/api/mcp_http`.
+  Renseignez `ha_mcp_url` explicitement pour ne pas dépendre de cet ordre.
 - `AGENTS.md` impose à l'agent de sauvegarder avant d'écrire, de valider ensuite, et de ne jamais
   redémarrer Home Assistant ni supprimer quoi que ce soit, y compris via les outils MCP.
 
