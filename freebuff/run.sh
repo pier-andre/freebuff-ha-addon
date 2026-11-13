@@ -135,7 +135,17 @@ fi
 # les en-têtes `Bearer $HA_MCP_TOKEN` et `Bearer $N8N_MCP_TOKEN` écrits dans
 # .agents/mcp.json soient résolus. Le jeton longue durée de Home Assistant reste
 # `$HOME_ASSISTANT_TOKEN`, exporté plus haut.
+#
+# Le repli sur l'ancienne option `mcp_token` reproduit exactement celui de
+# `mcp-config.sh` : tant que la migration n'est pas faite, le fichier MCP
+# référence `$HA_MCP_TOKEN` alors que `ha_mcp_token` est vide. Sans ce repli, la
+# variable n'était jamais exportée et l'en-tête `Authorization` partait sans
+# jeton, donc refusé côté serveur, sans rien dans le journal.
+ha_mcp_url_opt="$(config_value 'ha_mcp_url')"
 ha_mcp_token_opt="$(config_value 'ha_mcp_token')"
+if [[ -z "${ha_mcp_url_opt}" && -z "${ha_mcp_token_opt}" ]]; then
+    ha_mcp_token_opt="$(config_value 'mcp_token')"
+fi
 if [[ -n "${ha_mcp_token_opt}" ]]; then
     export HA_MCP_TOKEN="${ha_mcp_token_opt}"
     log_info "Jeton MCP Home Assistant chargé pour le terminal (ha_mcp_token)"
@@ -144,6 +154,50 @@ n8n_mcp_token_opt="$(config_value 'n8n_mcp_token')"
 if [[ -n "${n8n_mcp_token_opt}" ]]; then
     export N8N_MCP_TOKEN="${n8n_mcp_token_opt}"
     log_info "Jeton MCP n8n chargé pour le terminal (n8n_mcp_token)"
+fi
+
+# Empreinte d'un jeton pour le journal : longueur et émetteur du JWT, jamais la
+# valeur. Le jeton longue durée de Home Assistant porte l'identifiant de
+# l'instance dans `iss`, une clé API n8n porte `n8n`. La page de configuration
+# masque les champs `password` : après un enregistrement, c'est le seul contrôle
+# possible, et il montre tout de suite une valeur collée au mauvais endroit.
+token_fingerprint() {
+    local token="$1" payload pad issuer
+    if [[ "${token}" != *.*.* ]]; then
+        printf '%s caractères (jeton opaque)' "${#token}"
+        return 0
+    fi
+    payload="${token#*.}"
+    payload="${payload%%.*}"
+    if [[ -n "${payload}" ]]; then
+        pad=$(( (4 - ${#payload} % 4) % 4 ))
+        payload="$(printf '%s' "${payload}" | tr '_-' '/+' || true)"
+        if [[ "${pad}" -ne 0 ]]; then
+            payload="${payload}$(printf '=%.0s' $(seq 1 "${pad}"))"
+        fi
+        issuer="$(printf '%s' "${payload}" | base64 -d 2>/dev/null | jq -r '.iss // empty' 2>/dev/null || true)"
+    fi
+    printf '%s caractères (iss %s)' "${#token}" "${issuer:-illisible}"
+}
+
+mcp_fingerprints=''
+if [[ -n "${ha_mcp_token_opt}" ]]; then
+    mcp_fingerprints="ha_mcp_token=$(token_fingerprint "${ha_mcp_token_opt}")"
+fi
+if [[ -n "${n8n_mcp_token_opt}" ]]; then
+    mcp_fingerprints="${mcp_fingerprints:+${mcp_fingerprints}, }n8n_mcp_token=$(token_fingerprint "${n8n_mcp_token_opt}")"
+fi
+if [[ -n "${mcp_fingerprints}" ]]; then
+    log_info "Empreinte des jetons MCP : ${mcp_fingerprints}"
+fi
+
+# Un jeton Home Assistant collé dans `n8n_mcp_token` a la même forme qu'une clé
+# n8n : n8n répond `401 unknown-issuer` et rien ne l'explique, puisque les champs
+# `password` sont masqués. On le dit au démarrage plutôt que de laisser chercher.
+if [[ -n "${n8n_mcp_token_opt}" ]] \
+    && { [[ "${n8n_mcp_token_opt}" == "${HOME_ASSISTANT_TOKEN:-}" ]] \
+         || [[ "${n8n_mcp_token_opt}" == "${ha_mcp_token_opt}" ]]; }; then
+    log_warning "n8n_mcp_token est identique au jeton Home Assistant : n8n attend sa propre clé API et refuse celui-ci (401 unknown-issuer)"
 fi
 
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"

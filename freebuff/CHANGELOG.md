@@ -5,6 +5,18 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.15
+- 2026-11-13 — Sur la voie de migration, `HA_MCP_TOKEN` est de nouveau exporté vers le terminal : le
+  fichier `.agents/mcp.json` référence `$HA_MCP_TOKEN` alors que `ha_mcp_token` est encore vide, et
+  sans le repli sur `mcp_token` la variable n'était jamais exportée — l'en-tête `Authorization`
+  partait donc sans jeton et le serveur MCP répondait 401, sans indice dans le journal.
+- L'empreinte de chaque jeton MCP est écrite au démarrage (longueur et émetteur `iss` du JWT, jamais
+  la valeur). La page de configuration masque les champs `password` : c'était le seul moyen de voir
+  qu'une valeur avait été collée dans le mauvais champ.
+- Avertissement explicite lorsque `n8n_mcp_token` contient le jeton Home Assistant, que n8n refuse
+  avec `401 unknown-issuer` : un jeton HA et une clé n8n ont la même forme, rien ne les distingue à
+  l'œil dans un champ masqué.
+
 ## 0.2.14
 - 2026-11-13 — Deux serveurs MCP peuvent cohabiter dans `/local_apps/.agents/mcp.json` : Home
   Assistant (`homeassistant`) et un add-on n8n (`n8n`). Seuls les serveurs activés et joignables sont

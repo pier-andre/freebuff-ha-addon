@@ -68,13 +68,25 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `ha_mcp_token` | Jeton demandé par ce serveur, s'il diffère du jeton longue durée (facultatif, secret) |
 | `n8n_mcp_enabled` | Bascule du serveur MCP d'un add-on n8n (défaut `false`) |
 | `n8n_mcp_url` | URL du serveur MCP n8n, ex. `http://6560bdea-hass-n8n:5678/mcp-server/http` (facultatif) |
-| `n8n_mcp_token` | Clé API n8n utilisée comme jeton `Bearer` (facultatif, secret) |
+| `n8n_mcp_token` | Clé API n8n utilisée comme jeton `Bearer` (facultatif, secret — un jeton Home Assistant y donne `401 unknown-issuer`) |
 | `mcp_url` | **Dépréciée** — remplacée par `ha_mcp_url`, reprise tant que celle-ci est vide (migration) |
 | `mcp_token` | **Dépréciée** — remplacée par `ha_mcp_token`, reprise tant que celle-ci est vide (migration) |
 
 Les options `home_assistant_*` et `*_mcp_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on
 après les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — les jetons ne
 vivent que dans l'environnement du terminal, comme `github_token`.
+
+La page de configuration masque les champs `password` : on ne peut pas relire un jeton enregistré.
+Le journal donne donc, à chaque démarrage, l'empreinte de chacun — longueur et émetteur `iss` du JWT,
+jamais la valeur :
+
+```
+INFO: Empreinte des jetons MCP : ha_mcp_token=183 caractères (iss 6750ad00…), n8n_mcp_token=272 caractères (iss n8n)
+```
+
+C'est ce qui distingue un jeton Home Assistant d'une clé n8n (même forme, longueur différente) et
+qui révèle une valeur collée dans le mauvais champ. Si `n8n_mcp_token` est identique au jeton Home
+Assistant, le démarrage le signale aussi : n8n le refuse avec `401 unknown-issuer`.
 
 Les bascules `ha_mcp_enabled` et `n8n_mcp_enabled` servent exactement à cela : mettre un serveur en
 pause sans effacer son URL ni son jeton. Une bascule à `false` retire l'entrée du fichier MCP et
@@ -83,9 +95,11 @@ laisse les identifiants en place pour la réactivation.
 Les anciennes options `mcp_url`/`mcp_token` sont **conservées le temps de la migration** : tant que
 `ha_mcp_url` et `ha_mcp_token` sont vides, l'add-on reprend leurs valeurs, donc rien n'est perdu à la
 mise à jour. Recopiez-les dans les nouvelles options puis videz les anciennes — l'avertissement du
-journal cesse alors. Elles restent déclarées dans `config.yaml` parce que le Supervisor supprime de
-`options.json` toute option absente du schéma : les retirer tout de suite aurait effacé l'URL avant
-la reprise.
+journal cesse alors. Dès que `ha_mcp_url` et `ha_mcp_token` sont renseignées (vérifiable dans
+`/data/options.json`), vider les anciennes est sans effet sur le comportement : le repli ne s'active
+que si les deux nouvelles sont vides, et cela retire deux champs de la page de configuration. Elles
+restent déclarées dans `config.yaml` parce que le Supervisor supprime de `options.json` toute option
+absente du schéma : les retirer tout de suite aurait effacé l'URL avant la reprise.
 
 ## Téléphone et tablette
 
