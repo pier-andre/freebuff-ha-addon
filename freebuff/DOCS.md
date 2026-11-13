@@ -144,25 +144,40 @@ travaille exactement comme avant. Rien n'est requis dans les options pour les de
 | Serveur MCP | URL | Jeton |
 | --- | --- | --- |
 | Intégration intégrée « Model Context Protocol Server » (HA 2025.2+) | `http://homeassistant:8123/api/mcp` | `home_assistant_token` — **défaut, rien à configurer** |
-| Composant tiers exposant `/api/mcp` (ex. « MCP Server (HTTP Transport) ») | idem | idem |
+| Composant tiers exposant `/api/mcp` | idem | idem |
+| Intégration **MCP Server (HTTP Transport)** (`mcp_server_http_transport`) | `http://homeassistant.local:8123/api/mcp_http` | `home_assistant_token` |
 | App **HA-MCP** du Marketplace (`homeassistant-ai/ha-mcp`, port 9583) | `http://homeassistant.local:9583/<chemin secret>` (affiché dans les journaux de l'app) | aucun : le chemin secret *est* l'authentification |
 | `hass-mcp` (`/api/hass_mcp`) ou `ha-mcp-web` (port 8086, `/mcp`) | l'URL exacte du serveur | `mcp_token` si le serveur en exige un |
 
 - **Adresse par défaut** : `home_assistant_url` + `home_assistant_port` + `/api/mcp`. Elle convient à
   l'intégration intégrée comme aux composants qui réutilisent ce chemin, avec le même jeton.
-- **Autre serveur** : renseignez `mcp_url` (URL complète). Sans `mcp_token`, aucun en-tête
-  `Authorization` n'est envoyé — voulu pour HA-MCP, où le jeton Home Assistant n'a rien à faire dans
-  un autre conteneur.
+- **Autre serveur** : renseignez `mcp_url` (URL complète, port compris). Sans `mcp_token`, aucun
+  en-tête `Authorization` n'est envoyé vers une autre origine — voulu pour HA-MCP, où le jeton Home
+  Assistant n'a rien à faire dans un autre conteneur.
 - **Aucun secret dans le fichier** : l'en-tête contient `Bearer $HOME_ASSISTANT_TOKEN` (ou
   `Bearer $MCP_TOKEN` pour `mcp_token`), que la CLI résout depuis l'environnement du terminal.
 - **Détection** : le fichier n'est écrit que si le serveur répond à une poignée de main MCP (6 s de
   délai maximum). Sinon le journal de l'add-on affiche un avertissement et l'API REST prend le relais.
 - **Sans jeton longue durée** : pas de MCP. Le proxy Supervisor (`http://supervisor/core`) ne relaie
   pas `/api/mcp` (réponse 502 constatée), alors que les routes REST fonctionnent.
-- **Fichier personnalisé** : si `/local_apps/.agents/mcp.json` existe avec un autre contenu,
-  l'add-on le laisse intact. Supprimez-le pour qu'il soit régénéré au prochain démarrage.
-- Au premier lancement dans un dossier contenant `.agents/`, la CLI demande l'autorisation de charger
-  ces fichiers ; `freebuff --trust-agents` l'accepte d'emblée.
+- **Port** : un `mcp_url` sans port explicite part sur le port 80. Si l'hôte est celui de Home
+  Assistant, l'add-on complète avec `home_assistant_port` et l'écrit dans le journal ; sinon il
+  vous prévient. Donnez toujours l'URL complète, port compris.
+- **Jeton** : sur la même origine que Home Assistant (même schéma, hôte et port), le jeton longue
+  durée est réutilisé sans `mcp_token`. Pour un autre conteneur, renseignez `mcp_token` : sans lui,
+  aucun en-tête n'est envoyé, donc pas de fuite du jeton Home Assistant.
+- **Fichier géré** : le fichier appartient à l'add-on tant qu'il porte sa forme exacte. Il est
+  réécrit quand les options changent (empreinte dans `/data/mcp-managed.json`, copie de l'ancien
+  dans `/data/mcp-backups`), et les fichiers écrits par les versions précédentes sont repris en
+  main au premier démarrage.
+- **Fichier personnalisé** : dès que vous le modifiez à la main (autre contenu que celui produit
+  par l'add-on), il n'est plus touché. Le journal indique alors l'adresse qu'il contient réellement,
+  souvent l'ancienne : corrigez l'option ou supprimez le fichier pour le régénérer.
+- **Autorisation** : au premier lancement dans un dossier contenant `.agents/`, la CLI demande
+  l'autorisation de charger ces fichiers (dont `mcp.json`). Répondez oui une fois ; pour un
+  lancement non interactif, `freebuff --trust-agents` l'accepte d'emblée. Si vous préférez ne rien
+  charger, refusez : l'agent travaille alors avec la seule API REST, et supprimer
+  `/local_apps/.agents/mcp.json` suffit à faire disparaître l'invite.
 - `AGENTS.md` impose à l'agent de sauvegarder avant d'écrire, de valider ensuite, et de ne jamais
   redémarrer Home Assistant ni supprimer quoi que ce soit, y compris via les outils MCP.
 

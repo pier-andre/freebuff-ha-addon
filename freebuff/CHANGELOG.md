@@ -5,6 +5,23 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.12
+- 2026-11-13 — Correction du fichier MCP : `/local_apps/.agents/mcp.json` suit désormais les
+  options. Il était écrit une seule fois puis considéré comme « personnalisé », si bien qu'un
+  changement de `mcp_url` laissait la CLI brancher l'ancienne adresse.
+- Le fichier n'est réécrit que s'il a été écrit par l'add-on : empreinte conservée dans
+  `/data/mcp-managed.json`, plus reprise en main des fichiers des versions précédentes
+  (forme reconnaissable), avec sauvegarde dans `/data/mcp-backups` avant toute réécriture.
+  Un fichier modifié à la main reste intact et le journal indique l'adresse réellement utilisée.
+- `mcp_url` sans port explicite mais sur l'hôte de Home Assistant (`http://homeassistant.local/api/mcp_http`)
+  reçoit `home_assistant_port` au lieu de partir sur le port 80 ; le journal le signale.
+- Même instance MCP que Home Assistant : le jeton longue durée est réutilisé automatiquement pour
+  `/api/mcp_http`, sans renseigner `mcp_token` ni exposer le jeton à un autre conteneur (comparaison
+  de l'origine, schéma et port compris).
+- Échec de connexion journalisé avec sa cause (`HTTP 401`, délai dépassé, injoignable) et rappel de
+  l'adresse encore inscrite dans le fichier.
+- Documentation : fichier géré, autorisation `.agents/` au premier lancement.
+
 ## 0.2.11
 - 2026-11-13 — Téléphone et tablette : la page servie par ttyd reçoit au build un fragment
   (`mobile.html`, inséré par `build-index.mjs`) qui ajoute la balise `viewport` manquante, le

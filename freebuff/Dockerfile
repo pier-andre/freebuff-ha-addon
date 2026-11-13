@@ -69,10 +69,12 @@ RUN npm install --global freebuff@latest \
     && freebuff --version
 
 COPY run.sh /run.sh
+# Configuration MCP écrite au démarrage (fichier géré, suit les options).
+COPY mcp-config.sh /usr/local/share/freebuff/mcp-config.sh
 # Contexte et garde-fous de l'agent, installés dans /local_apps au démarrage.
 COPY AGENTS.md /usr/local/share/freebuff/AGENTS.md
 COPY --from=ttyd-builder /usr/local/bin/ttyd /usr/local/bin/ttyd
-RUN chmod a+x /run.sh
+RUN chmod a+x /run.sh /usr/local/share/freebuff/mcp-config.sh
 
 # tmux : la molette (y compris les crans synthétisés par le défilement tactile
 # de la page web) entre en mode copie, avec assez d'historique pour remonter une

@@ -119,105 +119,13 @@ else
 fi
 
 # --- Serveur MCP de Home Assistant (facultatif) ------------------------------
-# La CLI lit /local_apps/.agents/mcp.json (format `mcpServers`) et expose les
-# outils du serveur MCP comme des outils de l'agent : tableaux de bord, fichiers
-# YAML avec sauvegarde, traces d'automatisation, statistiques, recherche
-# d'entités. L'API REST reste la voie de repli : si aucun serveur MCP n'est
-# joignable, ce bloc n'écrit rien et l'agent travaille comme avant.
-# Un seul fichier couvre les quatre montages courants :
-#   * integration intégrée `mcp_server` (HA 2025.2+) : {HA_URL}/api/mcp, jeton
-#     longue durée en Bearer — c'est le défaut, aucun réglage nécessaire ;
-#   * composant tiers exposant /api/mcp (MCP Server (HTTP Transport)…) : même
-#     adresse, même jeton, donc même défaut ;
-#   * app « HA-MCP » du Marketplace (port 9583, chemin secret, sans jeton) ;
-#   * hass-mcp (/api/hass_mcp) et ha-mcp-web (port 8086, /mcp) : via `mcp_url`
-#     et, si le serveur en demande un, `mcp_token`.
-mcp_dst=/local_apps/.agents/mcp.json
-mcp_url_opt="$(config_value 'mcp_url')"
-mcp_token_opt="$(config_value 'mcp_token')"
-mcp_endpoint=''
-mcp_header_token=''
-
-if [[ -n "${mcp_url_opt}" ]]; then
-    mcp_endpoint="${mcp_url_opt}"
-    # Jeton propre à ce serveur : il reste dans l'environnement, jamais dans le
-    # fichier. Sans `mcp_token`, aucun en-tête Authorization n'est envoyé — le
-    # jeton Home Assistant ne doit pas partir vers un autre conteneur.
-    if [[ -n "${mcp_token_opt}" ]]; then
-        export MCP_TOKEN="${mcp_token_opt}"
-        mcp_header_token='$MCP_TOKEN'
-    fi
-elif [[ -n "${HOME_ASSISTANT_TOKEN:-}" ]]; then
-    # Pas de repli Supervisor ici : http://supervisor/core ne relaie pas
-    # /api/mcp (502 constaté), contrairement aux routes REST classiques.
-    mcp_endpoint="${HA_URL}/api/mcp"
-    mcp_header_token='$HOME_ASSISTANT_TOKEN'
-else
-    log_info "MCP ignoré : sans jeton longue durée, l'API REST passe par le proxy Supervisor"
-fi
-
-# Poignée de main MCP : le fichier n'est écrit que si le serveur répond, pour ne
-# pas laisser à la CLI un serveur mort à chaque démarrage.
-mcp_reachable() {
-    MCP_PROBE_URL="$1" MCP_PROBE_TOKEN="$2" node -e '
-const headers = {
-  "Content-Type": "application/json",
-  "Accept": "application/json, text/event-stream",
-}
-if (process.env.MCP_PROBE_TOKEN) {
-  headers.Authorization = "Bearer " + process.env.MCP_PROBE_TOKEN
-}
-fetch(process.env.MCP_PROBE_URL, {
-  method: "POST",
-  headers,
-  signal: AbortSignal.timeout(6000),
-  body: JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "initialize",
-    params: {
-      protocolVersion: "2025-06-18",
-      capabilities: {},
-      clientInfo: { name: "freebuff-addon", version: "1" },
-    },
-  }),
-})
-  .then((response) => process.exit(response.ok ? 0 : 1))
-  .catch(() => process.exit(1))
-' 2>/dev/null
-}
-
-if [[ -n "${mcp_endpoint}" ]]; then
-    if [[ "${mcp_header_token}" == '$MCP_TOKEN' ]]; then
-        mcp_probe_token="${MCP_TOKEN}"
-    elif [[ "${mcp_header_token}" == '$HOME_ASSISTANT_TOKEN' ]]; then
-        mcp_probe_token="${HOME_ASSISTANT_TOKEN}"
-    else
-        mcp_probe_token=''
-    fi
-
-    if [[ -n "${mcp_header_token}" ]]; then
-        mcp_json="$(jq -n --arg url "${mcp_endpoint}" --arg token "${mcp_header_token}" \
-            '{mcpServers:{homeassistant:{type:"http",url:$url,headers:{Authorization:("Bearer " + $token)}}}}')"
-    else
-        mcp_json="$(jq -n --arg url "${mcp_endpoint}" \
-            '{mcpServers:{homeassistant:{type:"http",url:$url}}}')"
-    fi
-
-    if mcp_reachable "${mcp_endpoint}" "${mcp_probe_token}"; then
-        mkdir -p /local_apps/.agents
-        if [[ ! -e "${mcp_dst}" ]]; then
-            printf '%s\n' "${mcp_json}" > "${mcp_dst}"
-            chmod 644 "${mcp_dst}"
-            log_info "Outils MCP activés : ${mcp_endpoint} (${mcp_dst})"
-        elif [[ "$(jq -S . "${mcp_dst}" 2>/dev/null)" == "$(printf '%s' "${mcp_json}" | jq -S .)" ]]; then
-            log_info "Outils MCP déjà configurés : ${mcp_endpoint}"
-        else
-            log_info "${mcp_dst} personnalisé : laissé intact, MCP non reconfiguré"
-        fi
-    else
-        log_warning "Serveur MCP injoignable (${mcp_endpoint}) : ${mcp_dst} non écrit, l'agent garde l'API REST"
-    fi
+# mcp-config.sh écrit /local_apps/.agents/mcp.json (format `mcpServers`) pour que
+# la CLI expose les outils MCP de Home Assistant : tableaux de bord, fichiers YAML
+# avec sauvegarde, `check_config`, traces, statistiques. Le fichier suit les
+# options (`mcp_url`, `mcp_token`), n'est écrit que si le serveur répond, et reste
+# intact s'il a été personnalisé ; l'API REST demeure la voie de repli.
+if ! bash /usr/local/share/freebuff/mcp-config.sh; then
+    log_warning "Configuration MCP non appliquée : l'agent garde l'API REST"
 fi
 
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"
@@ -247,6 +155,7 @@ echo "  Ensuite :               cd /local_apps/mon-add-on && freebuff"
 echo "  Add-ons locaux : /local_apps     Configuration HA : /homeassistant"
 echo "  Garde-fous agent : /local_apps/AGENTS.md (lecture obligatoire)"
 echo "  Outils MCP : /local_apps/.agents/mcp.json (sinon API REST)"
+echo "  Première ouverture : autorisez le chargement de .agents (ou freebuff --trust-agents)"
 echo "  Valider la config HA :  curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
 echo "                            -H 'Content-Type: application/json' -d '{}' \\"
 echo "                            \"\$HA_URL/api/services/homeassistant/check_config\""
