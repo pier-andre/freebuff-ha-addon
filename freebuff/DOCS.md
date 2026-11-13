@@ -60,16 +60,60 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `git_email` | E-mail utilisé pour les commits créés par l'agent |
 | `extra_packages` | Paquets Debian à installer au démarrage (ex. `python3`, `build-essential`) |
 | `github_token` | Jeton d'accès GitHub utilisé par `git` pour push/pull sans saisie manuelle (facultatif) |
+| `home_assistant_url` | Adresse de votre instance, ex. `http://homeassistant:8123` ou `https://ha.exemple.ca` (facultatif, défaut `http://homeassistant:8123`) |
+| `home_assistant_port` | Port de l'API si l'URL n'en contient pas (facultatif, défaut `8123`) |
 | `home_assistant_token` | Jeton d'accès longue durée d'un compte Home Assistant dédié (facultatif, secret) |
+
+Les trois options `home_assistant_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on après
+les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — le jeton ne vit que
+dans l'environnement du terminal, comme `github_token`.
 
 ## Accès à l'API Home Assistant locale
 
 Créez un compte Home Assistant dédié avec les permissions nécessaires, puis générez pour ce compte
-un jeton d'accès longue durée depuis son profil. Enregistrez-le dans `home_assistant_token` dans la
-configuration de l'add-on. Il est injecté dans l'environnement du terminal sous `HOME_ASSISTANT_TOKEN`
-et `HA_TOKEN`; l'adresse locale est disponible sous `HA_URL` (`http://homeassistant:8123`).
-L'option est un champ secret et le jeton n'est pas écrit dans les fichiers de l'add-on. Accordez au
-compte dédié uniquement les accès nécessaires et révoquez son jeton depuis son profil si besoin.
+un jeton d'accès longue durée depuis son profil. Enregistrez-le dans `home_assistant_token`.
+
+Le terminal reçoit alors :
+
+| Variable | Valeur |
+| --- | --- |
+| `HA_URL` | `home_assistant_url` + `home_assistant_port` (ex. `http://homeassistant:8123`) |
+| `HA_TOKEN` | le jeton longue durée |
+| `HOME_ASSISTANT_TOKEN` | identique à `HA_TOKEN` |
+| `HA_PORT` | le port seul |
+
+Sans jeton configuré, `HA_URL` vaut `http://supervisor/core` et `HA_TOKEN` le jeton éphémère du
+Supervisor (permission `homeassistant_api`) : l'API reste utilisable, sans secret stocké.
+
+Exemple — vérifier la configuration avant de recharger :
+
+```bash
+curl -s -H "Authorization: Bearer $HA_TOKEN" \
+     -H 'Content-Type: application/json' -d '{}' \
+     "$HA_URL/api/services/homeassistant/check_config"
+# {"result": "valid"}  -> on peut recharger
+curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" \
+     -H 'Content-Type: application/json' -d '{}' \
+     "$HA_URL/api/services/automation/reload"
+```
+
+Accordez au compte dédié uniquement les accès nécessaires et révoquez son jeton depuis son profil
+si besoin.
+
+## Garde-fous de l'agent
+
+Au démarrage, l'add-on installe `/local_apps/AGENTS.md` : un rappel du contexte (agent dans un
+add-on Home Assistant) et des règles que l'agent doit suivre — changements non destructifs,
+sauvegarde préalable, validation de la configuration obligatoire avant de poursuivre, restauration
+en cas d'échec, pas de redémarrage de Home Assistant.
+
+Ce fichier est réécrit au démarrage tant qu'il commence par la ligne
+`<!-- freebuff-addon-guardrails -->`. Si vous écrivez votre propre `AGENTS.md` (autre première
+ligne), l'add-on le laisse intact : ajoutez-y vos consignes, elles seront lues par l'agent.
+
+**Portée** : `AGENTS.md` est lu par l'agent lorsqu'il travaille dans `/local_apps` ou un de ses
+sous-dossiers. Pour un dépôt cloné dans `/share`, copiez-y le fichier
+(`cp /local_apps/AGENTS.md /share/mon-projet/AGENTS.md`) si vous voulez les mêmes garde-fous.
 
 ## Notes
 

@@ -77,16 +77,64 @@ if [[ ! -s "${credentials_file}" ]]; then
     done
 fi
 
-# Jeton longue durée Home Assistant (facultatif), disponible pour les outils CLI.
+# --- Accès à l'API Home Assistant -------------------------------------------
+# Deux modes, dans cet ordre :
+#   1. jeton longue durée d'un compte HA dédié (`home_assistant_token`, champ
+#      secret) : rien n'est écrit sur le disque, le jeton ne vit que dans
+#      l'environnement du terminal ;
+#   2. à défaut, le proxy Supervisor (`http://supervisor/core`, permission
+#      `homeassistant_api`) : le jeton est éphémère et fourni par le Supervisor.
+# L'adresse est configurable (`home_assistant_url`, `home_assistant_port`) pour
+# les instances derrière un reverse proxy ou en HTTPS.
+ha_port="$(config_value 'home_assistant_port')"
+[[ -n "${ha_port}" ]] || ha_port=8123
+
+home_assistant_url() {
+    local url
+    url="$(config_value 'home_assistant_url')"
+    if [[ -z "${url}" ]]; then
+        printf 'http://homeassistant:%s' "${ha_port}"
+        return
+    fi
+    [[ "${url}" == *"://"* ]] || url="http://${url}"
+    url="${url%/}"
+    # Un port explicite dans l'URL est prioritaire sur `home_assistant_port`.
+    if [[ "${url}" =~ ^[A-Za-z][A-Za-z0-9+.-]*://[^/]+:[0-9]+$ ]]; then
+        printf '%s' "${url}"
+    else
+        printf '%s:%s' "${url}" "${ha_port}"
+    fi
+}
+
+export HA_PORT="${ha_port}"
 if config_has_value 'home_assistant_token'; then
     export HOME_ASSISTANT_TOKEN="$(config_value 'home_assistant_token')"
     export HA_TOKEN="${HOME_ASSISTANT_TOKEN}"
-    export HA_URL='http://homeassistant:8123'
-    log_info "Jeton Home Assistant local chargé"
+    export HA_URL="$(home_assistant_url)"
+    log_info "Jeton Home Assistant longue durée chargé (${HA_URL})"
+else
+    export HA_URL='http://supervisor/core'
+    export HA_TOKEN="${SUPERVISOR_TOKEN}"
+    log_info "API Home Assistant via le proxy Supervisor (${HA_URL})"
 fi
 
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"
 git config --global --add safe.directory '*'
+
+# Contexte et garde-fous de l'agent : réinstallés à chaque démarrage pour suivre
+# les mises à jour de l'add-on, sauf si l'utilisateur a écrit son propre fichier.
+agents_src=/usr/local/share/freebuff/AGENTS.md
+agents_dst=/local_apps/AGENTS.md
+agents_marker='<!-- freebuff-addon-guardrails -->'
+if [[ -f "${agents_src}" ]]; then
+    if [[ ! -e "${agents_dst}" ]] || [[ "$(head -n 1 "${agents_dst}" 2>/dev/null)" == "${agents_marker}" ]]; then
+        cp "${agents_src}" "${agents_dst}"
+        chmod 644 "${agents_dst}"
+        log_info "Instructions de l'agent installées dans ${agents_dst}"
+    else
+        log_info "${agents_dst} personnalisé : garde-fous de l'add-on non installés"
+    fi
+fi
 
 # Rappel affiché à l'ouverture de chaque terminal
 cat > /etc/profile.d/00-freebuff.sh <<'BANNER'
@@ -95,6 +143,10 @@ echo "  Freebuff - Home Assistant"
 echo "  Première utilisation :  freebuff login"
 echo "  Ensuite :               cd /local_apps/mon-add-on && freebuff"
 echo "  Add-ons locaux : /local_apps     Configuration HA : /homeassistant"
+echo "  Garde-fous agent : /local_apps/AGENTS.md (lecture obligatoire)"
+echo "  Valider la config HA :  curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
+echo "                            -H 'Content-Type: application/json' -d '{}' \\"
+echo "                            \"\$HA_URL/api/services/homeassistant/check_config\""
 echo
 BANNER
 

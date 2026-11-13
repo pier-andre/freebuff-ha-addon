@@ -5,6 +5,18 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.9
+- 2026-11-13 — Retrait des derniers restes de l'API tierce : `patches/` (correctif Freebuff2API et
+  son mode d'emploi) est supprimé, plus aucun fichier de l'add-on ne s'y réfère.
+- L'accès à l'API Home Assistant est configurable : nouvelles options `home_assistant_url` et
+  `home_assistant_port` (défaut `http://homeassistant:8123`), pour une instance derrière un reverse
+  proxy ou en HTTPS. `home_assistant_token` reste un champ secret, jamais écrit sur le disque.
+- Sans jeton longue durée configuré, `HA_URL`/`HA_TOKEN` pointent vers le proxy Supervisor
+  (`http://supervisor/core`, permission `homeassistant_api`) pour que la validation de configuration
+  fonctionne dès l'installation.
+- Ajout de `AGENTS.md` : contexte et garde-fous remis à l'agent (changements non destructifs,
+  sauvegarde préalable, validation `check_config` obligatoire et restauration en cas d'échec).
+
 ## 0.2.8
 - 2026-11-13 — Retrait de l'API tierce optionnelle et de ses sources et options associées.
 - Ajout d'une option secrète pour injecter un jeton Home Assistant longue durée dans l'environnement du terminal.

@@ -69,6 +69,8 @@ RUN npm install --global freebuff@latest \
     && freebuff --version
 
 COPY run.sh /run.sh
+# Contexte et garde-fous de l'agent, installés dans /local_apps au démarrage.
+COPY AGENTS.md /usr/local/share/freebuff/AGENTS.md
 COPY --from=ttyd-builder /usr/local/bin/ttyd /usr/local/bin/ttyd
 RUN chmod a+x /run.sh
 

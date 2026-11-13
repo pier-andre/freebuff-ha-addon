@@ -10,15 +10,18 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
 - installe Node.js + `freebuff` (CLI officielle, toujours la dernière version au moment du build) ;
 - ouvre un terminal web (ttyd + tmux) intégré à Home Assistant via Ingress ;
 - monte `/local_apps` (vos add-ons locaux) et `/homeassistant` (votre configuration HA) ;
-- garde la session Freebuff dans `/data`, donc vous ne vous reconnectez pas après un redémarrage.
-- peut recevoir un jeton Home Assistant local dans son environnement pour accéder à l'API Home Assistant.
+- garde la session Freebuff dans `/data`, donc vous ne reconnectez pas après un redémarrage ;
+- donne à l'agent un accès à l'API Home Assistant : adresse et port configurables, jeton longue durée
+  dans un champ secret (ou, à défaut, le proxy Supervisor) ;
+- installe `/local_apps/AGENTS.md`, le contexte et les garde-fous de l'agent : changements non
+  destructifs, sauvegarde préalable, validation de la configuration avant de poursuivre.
 
 ## Installation
 
 L'add-on vit dans le dossier `freebuff/` de ce dépôt, et son nom est son identifiant :
-`freebuff/config.yaml`, `freebuff/Dockerfile`, `freebuff/run.sh`, `freebuff/DOCS.md` et
-`freebuff/CHANGELOG.md` doivent rester ensemble. `repository.yaml` et `renovate.json` restent à la
-racine du dépôt.
+`freebuff/config.yaml`, `freebuff/Dockerfile`, `freebuff/run.sh`, `freebuff/DOCS.md`,
+`freebuff/CHANGELOG.md` et `freebuff/AGENTS.md` doivent rester ensemble. `repository.yaml` et
+`renovate.json` restent à la racine du dépôt.
 
 1. Dans Home Assistant : **Paramètres → Modules complémentaires → Boutique des modules complémentaires**
    → menu ⋮ → **Dépôts** → collez `https://github.com/pier-andre/freebuff-ha-addon` → **Ajouter**.
@@ -56,9 +59,18 @@ Pour un dépôt GitHub classique, clonez-le dans `/share` (ou `/local_apps`) et 
 
 ### Accès à Home Assistant
 
-Vous pouvez enregistrer un jeton longue durée d'un compte Home Assistant dédié dans l'option secrète
-`home_assistant_token`. Le terminal le reçoit dans `HOME_ASSISTANT_TOKEN` et `HA_TOKEN`, avec l'adresse
-locale `HA_URL=http://homeassistant:8123`. Limitez les permissions du compte au strict nécessaire.
+Enregistrez un jeton longue durée d'un compte Home Assistant dédié dans l'option secrète
+`home_assistant_token`. Le terminal le reçoit dans `HOME_ASSISTANT_TOKEN` et `HA_TOKEN`, avec
+`HA_URL` construit depuis `home_assistant_url` et `home_assistant_port` (par défaut
+`http://homeassistant:8123`). Sans jeton, l'add-on se rabat sur le proxy Supervisor. Limitez les
+permissions du compte au strict nécessaire.
+
+### Garde-fous de l'agent
+
+`/local_apps/AGENTS.md` rappelle à l'agent qu'il travaille dans un add-on Home Assistant et lui
+impose : changements non destructifs, sauvegarde avant écriture, validation de la configuration
+(`homeassistant.check_config`, équivalent de `ha core check`) avant de poursuivre, restauration
+immédiate si elle échoue, et interdiction de redémarrer Home Assistant.
 
 ## Limites connues
 
