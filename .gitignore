@@ -1,20 +1,20 @@
-# Secrets et configuration locale
+# Secrets et configuration locale 
 .env
 .env.*
 
-# Données persistantes / artefacts de build
+# Données persistantes / artefacts de build 
 data/
 *.db
 *.sqlite
 *.sqlite3
 *.log
 
-# Python
+# Python 
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 
-# macOS / éditeurs
+# macOS / éditeurs 
 .DS_Store
 *.swp
