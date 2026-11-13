@@ -36,6 +36,13 @@ options:
   n8n_mcp_enabled: false
   n8n_mcp_url: ""
   n8n_mcp_token: ""
+  # Anciennes options, conservées le temps de la migration vers ha_mcp_* : le
+  # Supervisor supprime de options.json toute option absente du schéma, donc les
+  # retirer ici effacerait l'URL et le jeton enregistrés avant même que
+  # mcp-config.sh puisse les reprendre. À ne retirer qu'une fois ha_mcp_url et
+  # ha_mcp_token renseignés (vérifiable dans /data/options.json).
+  mcp_url: ""
+  mcp_token: ""
 schema:
   git_name: str?
   git_email: email?
@@ -51,3 +58,5 @@ schema:
   n8n_mcp_enabled: bool
   n8n_mcp_url: str?
   n8n_mcp_token: password?
+  mcp_url: str?
+  mcp_token: password?

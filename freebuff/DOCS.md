@@ -69,6 +69,8 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `n8n_mcp_enabled` | Bascule du serveur MCP d'un add-on n8n (défaut `false`) |
 | `n8n_mcp_url` | URL du serveur MCP n8n, ex. `http://6560bdea-hass-n8n:5678/mcp-server/http` (facultatif) |
 | `n8n_mcp_token` | Clé API n8n utilisée comme jeton `Bearer` (facultatif, secret) |
+| `mcp_url` | **Dépréciée** — remplacée par `ha_mcp_url`, reprise tant que celle-ci est vide (migration) |
+| `mcp_token` | **Dépréciée** — remplacée par `ha_mcp_token`, reprise tant que celle-ci est vide (migration) |
 
 Les options `home_assistant_*` et `*_mcp_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on
 après les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — les jetons ne
@@ -77,6 +79,13 @@ vivent que dans l'environnement du terminal, comme `github_token`.
 Les bascules `ha_mcp_enabled` et `n8n_mcp_enabled` servent exactement à cela : mettre un serveur en
 pause sans effacer son URL ni son jeton. Une bascule à `false` retire l'entrée du fichier MCP et
 laisse les identifiants en place pour la réactivation.
+
+Les anciennes options `mcp_url`/`mcp_token` sont **conservées le temps de la migration** : tant que
+`ha_mcp_url` et `ha_mcp_token` sont vides, l'add-on reprend leurs valeurs, donc rien n'est perdu à la
+mise à jour. Recopiez-les dans les nouvelles options puis videz les anciennes — l'avertissement du
+journal cesse alors. Elles restent déclarées dans `config.yaml` parce que le Supervisor supprime de
+`options.json` toute option absente du schéma : les retirer tout de suite aurait effacé l'URL avant
+la reprise.
 
 ## Téléphone et tablette
 

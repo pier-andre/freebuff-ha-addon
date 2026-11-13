@@ -12,6 +12,10 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 - Options renommées `mcp_url`/`mcp_token` → `ha_mcp_url`/`ha_mcp_token`, et nouvelles
   `n8n_mcp_url`/`n8n_mcp_token`. Les valeurs enregistrées sous les anciens noms sont reprises au
   premier démarrage, avec un avertissement invitant à les recopier.
+- Les anciennes options restent déclarées dans `config.yaml` le temps de cette migration : le
+  Supervisor supprime de `options.json` toute option absente du schéma, ce qui aurait effacé l'URL
+  et le jeton enregistrés avant que l'add-on puisse les reprendre. Rien à ressaisir à la mise à
+  jour, et l'avertissement disparaît une fois `ha_mcp_url`/`ha_mcp_token` renseignées.
 - Bascule par serveur : `ha_mcp_enabled` (défaut `true`) et `n8n_mcp_enabled` (défaut `false`)
   mettent un serveur en pause sans effacer son URL ni son jeton. Les deux à `false` retirent le
   fichier géré, après sauvegarde dans `/data/mcp-backups`.

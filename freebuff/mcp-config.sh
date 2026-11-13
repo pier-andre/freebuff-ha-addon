@@ -167,12 +167,16 @@ ha_mcp_enabled="$(config_bool 'ha_mcp_enabled' 'true')"
 ha_mcp_url_opt="$(config_value 'ha_mcp_url')"
 ha_mcp_token_opt="$(config_value 'ha_mcp_token')"
 if [[ -z "${ha_mcp_url_opt}" && -z "${ha_mcp_token_opt}" ]]; then
-    # Options renommées en 0.2.14 : on reprend les valeurs enregistrées sous les
-    # anciens noms, le temps que l'utilisateur les recopie.
+    # Options renommées en 0.2.14. Elles restent déclarées dans config.yaml tant
+    # que la migration n'est pas faite : le Supervisor retire de options.json ce
+    # qui n'est plus au schéma, et la reprise ci-dessous n'aurait alors plus rien
+    # à lire. La condition porte sur les deux nouvelles options à la fois pour
+    # qu'un jeton d'une autre origine ne soit jamais envoyé à une URL que
+    # l'utilisateur vient de changer.
     ha_mcp_url_opt="$(config_value 'mcp_url')"
     ha_mcp_token_opt="$(config_value 'mcp_token')"
     if [[ -n "${ha_mcp_url_opt}${ha_mcp_token_opt}" ]]; then
-        log_warning "Options mcp_url/mcp_token renommées : recopiez-les dans ha_mcp_url/ha_mcp_token (valeurs reprises pour ce démarrage)"
+        log_warning "Options mcp_url/mcp_token dépréciées mais reprises : recopiez-les dans ha_mcp_url/ha_mcp_token, puis videz-les (elles resteront actives d'ici là)"
     fi
 fi
 
