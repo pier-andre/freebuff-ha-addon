@@ -14,7 +14,8 @@ modification de production.
 | `/data` | données persistantes de cet add-on (session Freebuff, options) | lecture/écriture |
 
 Variables d'environnement disponibles : `HA_URL` et `HA_TOKEN` (jeton longue durée d'un compte
-dédié, ou jeton éphémère du proxy Supervisor), `HA_PORT`, `GH_TOKEN` pour `git`.
+dédié, ou jeton éphémère du proxy Supervisor), `HA_PORT`, `GH_TOKEN` pour `git`, et `MCP_TOKEN`
+quand l'option `mcp_token` est renseignée.
 
 ## Règles absolues
 
@@ -55,6 +56,26 @@ curl -s -H "Authorization: Bearer $HA_TOKEN" \
 Après validation réussie, recharge ce qui est nécessaire plutôt que de redémarrer :
 `automation.reload`, `script.reload`, `scene.reload`, `template.reload` via
 `POST $HA_URL/api/services/<domaine>/reload`.
+
+## Serveur MCP (si présent)
+
+Quand `/local_apps/.agents/mcp.json` existe et que le serveur répond, tu disposes en plus des outils
+MCP de Home Assistant (`get_dashboard_config`, `patch_dashboard_config`, `save_config_file`,
+`check_config`, `get_trace`, `search_entities`…). C'est un confort par-dessus **la même instance** :
+jamais une seconde instance, jamais un accès distant. L'API REST (`$HA_URL`, `$HA_TOKEN`) reste la
+voie de repli et fait foi en cas de désaccord entre les deux.
+
+- `backup_config_files` avant tout `save_config_file` ou `batch_edit_config_files`, puis
+  `check_config` et `restore_config_backup` si la validation échoue : les règles ci-dessus
+  s'appliquent aux outils MCP exactement comme aux fichiers.
+- Jamais `restart_ha`, `delete_config_file`, `delete_dashboard_config`, `delete_automation`,
+  `delete_entity`, `clear_statistics`, `adjust_statistics` ni `update_entity_registry` sans demande
+  explicite de l'utilisateur.
+- Tableaux de bord : préférer `patch_dashboard_config` (JSON Patch, édition partielle) à
+  `save_dashboard_config` (remplacement complet), et relire avec `get_dashboard_config`.
+- Ces outils viennent d'un composant tiers (`mcp_server`, `mcp_server_http_transport`, HA-MCP…) :
+  ils changent d'une version à l'autre. Si un outil manque ou échoue, reviens à l'API REST et
+  signale-le au lieu de contourner le garde-fou.
 
 ## Cas particuliers
 

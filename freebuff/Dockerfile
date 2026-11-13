@@ -74,6 +74,33 @@ COPY AGENTS.md /usr/local/share/freebuff/AGENTS.md
 COPY --from=ttyd-builder /usr/local/bin/ttyd /usr/local/bin/ttyd
 RUN chmod a+x /run.sh
 
+# tmux : la molette (y compris les crans synthétisés par le défilement tactile
+# de la page web) entre en mode copie, avec assez d'historique pour remonter une
+# longue conversation de l'agent.
+COPY tmux.conf /etc/tmux.conf
+
+# Page web de ttyd + correctifs mobiles. La page de ttyd 1.7.7 est autonome
+# (xterm.js y est inliné) : on récupère donc la page exactement servie par le
+# binaire compilé, on y insère `mobile.html` avant </head>, et l'add-on sert le
+# résultat avec `--index`. Rien n'est copié de ttyd dans le dépôt, et une mise à
+# jour de ttyd régénère la page au build suivant.
+COPY mobile.html build-index.mjs /usr/local/share/freebuff/
+RUN set -eux; \
+    ttyd --port 7681 --writable --once sleep 30 >/dev/null 2>&1 & \
+    ttyd_pid=$!; \
+    for _ in $(seq 1 100); do \
+        if curl -fsS http://127.0.0.1:7681/ -o /tmp/ttyd-index.html; then break; fi; \
+        sleep 0.1; \
+    done; \
+    kill "${ttyd_pid}" 2>/dev/null || true; \
+    test -s /tmp/ttyd-index.html; \
+    node /usr/local/share/freebuff/build-index.mjs \
+        /tmp/ttyd-index.html \
+        /usr/local/share/freebuff/mobile.html \
+        /usr/local/share/freebuff/index.html; \
+    rm -f /tmp/ttyd-index.html; \
+    ls -l /usr/local/share/freebuff/index.html
+
 # L'image Home Assistant démarre s6-overlay ; ici c'est run.sh qui lance ttyd (init: false).
 ENTRYPOINT []
 CMD [ "/run.sh" ]

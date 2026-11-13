@@ -1,0 +1,170 @@
+<!-- freebuff-mobile — correctifs mobiles insérés par build-index.mjs dans la page servie
+     par ttyd 1.7.7.
+     La page d'origine n'a ni balise viewport, ni défilement tactile, et cache son
+     champ de saisie hors écran — d'où une conversation impossible à faire défiler
+     au doigt et des claviers à prédiction (SwiftKey, Gboard) qui perdent leur
+     composition. Rien n'est modifié dans le terminal lui-même : on n'ajoute que
+     du CSS et des écouteurs d'événements. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Le champ caché de xterm est déporté à left:-9999em avec une taille nulle :
+     iOS y place mal le curseur d'IME et les claviers à prédiction perdent leur
+     composition. On le garde dans la page, minuscule mais à sa place, et à 16px
+     (en dessous, Safari zoome à la prise de focus). */
+  .xterm .xterm-helper-textarea {
+    left: 0 !important;
+    top: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    font-size: 16px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Le défilement est assuré par le script ci-dessous : on coupe les gestes
+     natifs sur la zone du terminal (rebond élastique, sélection, zoom). */
+  .xterm, .xterm-screen, .xterm-viewport {
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+</style>
+<script>
+(function () {
+  "use strict";
+
+  var TERMINAL = ".xterm";
+  var PX_PER_NOTCH = 14;   // glissement (px) nécessaire pour un cran de molette
+  var WHEEL_DELTA = 120;   // un cran tel que xterm le comprend
+  var FLICK_SPEED = 0.45;  // px/ms au-delà desquels on ajoute de l'inertie
+
+  function terminal() {
+    return document.querySelector(TERMINAL);
+  }
+
+  // xterm écoute `wheel` sur .xterm : un événement synthétique est traité
+  // exactement comme une molette physique. Quand le programme du terminal suit
+  // la souris (tmux avec `mouse on`, TUI), xterm transmet le cran en séquences
+  // SGR ; sinon il fait défiler son propre buffer.
+  function notch(direction, x, y) {
+    var el = terminal();
+    if (!el) return;
+    el.dispatchEvent(new WheelEvent("wheel", {
+      deltaY: direction * WHEEL_DELTA,
+      deltaMode: 0,
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+      cancelable: true,
+      view: window
+    }));
+  }
+
+  var touch = null;
+
+  document.addEventListener("touchstart", function (event) {
+    if (event.touches.length !== 1 || !(event.target instanceof Element) ||
+        !event.target.closest(TERMINAL)) {
+      touch = null;
+      return;
+    }
+    var t = event.touches[0];
+    touch = {
+      startX: t.clientX,
+      startY: t.clientY,
+      x: t.clientX,
+      y: t.clientY,
+      time: event.timeStamp,
+      pending: 0,
+      active: false,
+      speed: 0
+    };
+  }, { capture: true, passive: true });
+
+  document.addEventListener("touchmove", function (event) {
+    if (!touch || event.touches.length !== 1) return;
+    var t = event.touches[0];
+    if (!touch.active) {
+      var dx = t.clientX - touch.startX;
+      var dy = t.clientY - touch.startY;
+      // Sous 6 px on ne sait pas encore si c'est un défilement : on laisse le
+      // navigateur gérer (un simple appui doit pouvoir ouvrir le clavier).
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dx) > Math.abs(dy)) { touch = null; return; } // geste horizontal
+      touch.active = true;
+    }
+    event.preventDefault(); // ni rebond, ni sélection, ni « tirer pour rafraîchir »
+    touch.pending += touch.y - t.clientY;
+    var elapsed = Math.max(1, event.timeStamp - touch.time);
+    touch.speed = (touch.y - t.clientY) / elapsed;
+    touch.x = t.clientX;
+    touch.y = t.clientY;
+    touch.time = event.timeStamp;
+    while (Math.abs(touch.pending) >= PX_PER_NOTCH) {
+      var direction = touch.pending > 0 ? 1 : -1;
+      touch.pending -= direction * PX_PER_NOTCH;
+      notch(direction, touch.x, touch.y);
+    }
+  }, { capture: true, passive: false });
+
+  function release() {
+    if (!touch) return;
+    var speed = touch.speed;
+    var x = touch.x;
+    var y = touch.y;
+    var active = touch.active;
+    touch = null;
+    if (!active || Math.abs(speed) < FLICK_SPEED) return;
+    // Un geste rapide continue de défiler un peu, comme une molette lancée.
+    var direction = speed > 0 ? 1 : -1;
+    var remaining = Math.min(12, Math.round(Math.abs(speed) * 8));
+    (function step() {
+      if (remaining-- <= 0) return;
+      notch(direction, x, y);
+      window.requestAnimationFrame(step);
+    })();
+  }
+
+  document.addEventListener("touchend", release, { capture: true, passive: true });
+  document.addEventListener("touchcancel", release, { capture: true, passive: true });
+
+  // Claviers à prédiction : xterm ne gère pas la composition IME de façon
+  // fiable (doublons et texte tronqué quand le clavier remplace le contenu du
+  // champ). On désactive autocorrection et majuscules automatiques — les
+  // commandes sont sensibles à la casse — et on annonce une touche d'envoi pour
+  // que « Entrée » arrive telle quelle.
+  var INPUT_ATTRIBUTES = {
+    autocomplete: "off",
+    autocorrect: "off",
+    autocapitalize: "off",
+    spellcheck: "false",
+    enterkeyhint: "send",
+    inputmode: "text"
+  };
+
+  function tuneInput() {
+    var field = document.querySelector(".xterm-helper-textarea");
+    if (!field) return;
+    for (var name in INPUT_ATTRIBUTES) {
+      if (field.getAttribute(name) !== INPUT_ATTRIBUTES[name]) {
+        field.setAttribute(name, INPUT_ATTRIBUTES[name]);
+      }
+    }
+  }
+
+  document.addEventListener("focusin", tuneInput, true);
+  document.addEventListener("DOMContentLoaded", tuneInput);
+  window.addEventListener("load", tuneInput);
+  setTimeout(tuneInput, 500);
+  setTimeout(tuneInput, 2000);
+})();
+</script>

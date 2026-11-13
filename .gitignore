@@ -4,6 +4,9 @@
 
 # Données persistantes / artefacts de build 
 data/
+
+# Fichiers générés au démarrage par l'add-on (outils MCP)
+.agents/
 *.db
 *.sqlite
 *.sqlite3

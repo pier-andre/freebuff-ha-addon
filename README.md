@@ -14,7 +14,13 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
 - donne à l'agent un accès à l'API Home Assistant : adresse et port configurables, jeton longue durée
   dans un champ secret (ou, à défaut, le proxy Supervisor) ;
 - installe `/local_apps/AGENTS.md`, le contexte et les garde-fous de l'agent : changements non
-  destructifs, sauvegarde préalable, validation de la configuration avant de poursuivre.
+  destructifs, sauvegarde préalable, validation de la configuration avant de poursuivre ;
+- ajoute les outils MCP de Home Assistant quand un serveur MCP est disponible — intégration intégrée
+  (`/api/mcp`), composant équivalent, ou app HA-MCP du Marketplace via `mcp_url` — pour éditer les
+  tableaux de bord, les fichiers YAML avec sauvegarde et les traces ; l'API REST reste le repli ;
+- adapte le terminal au téléphone : défilement de la conversation au doigt (glissement traduit en
+  crans de molette vers tmux, historique de 50 000 lignes), balise `viewport` et champ de saisie
+  compatible avec les claviers à prédiction (SwiftKey, Gboard).
 
 ## Installation
 

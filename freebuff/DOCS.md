@@ -63,10 +63,41 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `home_assistant_url` | Adresse de votre instance, ex. `http://homeassistant:8123` ou `https://ha.exemple.ca` (facultatif, défaut `http://homeassistant:8123`) |
 | `home_assistant_port` | Port de l'API si l'URL n'en contient pas (facultatif, défaut `8123`) |
 | `home_assistant_token` | Jeton d'accès longue durée d'un compte Home Assistant dédié (facultatif, secret) |
+| `mcp_url` | URL d'un serveur MCP autre que `/api/mcp` de votre instance, ex. HA-MCP sur `http://homeassistant.local:9583/private_…` (facultatif) |
+| `mcp_token` | Jeton demandé par ce serveur MCP, s'il en exige un (facultatif, secret) |
 
 Les trois options `home_assistant_*` sont lues **au démarrage de l'add-on** : redémarrez l'add-on après
 les avoir modifiées. Elles ne sont jamais écrites dans un fichier de l'add-on — le jeton ne vit que
 dans l'environnement du terminal, comme `github_token`.
+
+## Téléphone et tablette
+
+La page servie par ttyd reçoit au build un petit fragment (`freebuff/mobile.html`, inséré par
+`build-index.mjs`) destiné aux écrans tactiles. ttyd et xterm.js ne sont pas modifiés : ce sont des
+styles et des écouteurs d'événements ajoutés à la page.
+
+- **Défilement au doigt** : un glissement vertical sur le terminal est traduit en crans de molette,
+  donc reçu comme une vraie molette par le programme du terminal — tmux (`mouse on`, historique de
+  50 000 lignes) ou la TUI Freebuff elle-même. La conversation remonte au doigt, avec un peu
+  d'inertie quand le geste est rapide ; un geste horizontal reste au navigateur.
+- **Mise en page** : la balise `viewport` manquait (iOS affichait la page en 980 px de large puis la
+  dézoomait) ; plus de rebond élastique ni de « tirer pour rafraîchir » sur la zone du terminal.
+- **Claviers à prédiction** : le champ de saisie caché de xterm, déporté hors écran (`left:-9999em`)
+  et de taille nulle, est ramené dans la page et fixé à 16 px — c'est ce positionnement qui faisait
+  perdre la composition à SwiftKey, et une taille inférieure à 16 px qui déclenchait le zoom
+  automatique de Safari. Autocorrection et majuscule automatique sont désactivées (les commandes
+  sont sensibles à la casse) et `enterkeyhint="send"` annonce une touche d'envoi.
+
+Ce qui reste limité par xterm.js : la prédiction s'affiche dans le clavier, pas dans le terminal, et
+un mot remplacé par le clavier peut arriver en plusieurs morceaux. Pour les commandes, mieux vaut
+taper mot par mot que compter sur l'autocorrection.
+
+Sur ordinateur, `mouse on` réserve le glissement de souris à tmux : pour sélectionner du texte à la
+souris, maintenez **Maj** pendant le glissement. `Ctrl+B [` entre dans le mode copie (`q` pour en
+sortir).
+
+Ces correctifs sont appliqués au build : après une mise à jour de l'add-on, l'interface est
+régénérée à partir de la version de ttyd installée.
 
 ## Accès à l'API Home Assistant locale
 
@@ -99,6 +130,41 @@ curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" \
 
 Accordez au compte dédié uniquement les accès nécessaires et révoquez son jeton depuis son profil
 si besoin.
+
+## Outils MCP (facultatif)
+
+Si votre instance expose un serveur MCP, l'add-on écrit `/local_apps/.agents/mcp.json` au démarrage.
+La CLI Freebuff y voit alors les outils MCP de Home Assistant — édition des tableaux de bord,
+lecture/écriture des fichiers YAML avec sauvegarde intégrée, `check_config`, traces d'automatisation,
+statistiques, recherche d'entités — **en plus** de l'API REST.
+
+L'API REST reste le repli : sans serveur MCP joignable, aucun fichier n'est écrit et l'agent
+travaille exactement comme avant. Rien n'est requis dans les options pour les deux premiers cas.
+
+| Serveur MCP | URL | Jeton |
+| --- | --- | --- |
+| Intégration intégrée « Model Context Protocol Server » (HA 2025.2+) | `http://homeassistant:8123/api/mcp` | `home_assistant_token` — **défaut, rien à configurer** |
+| Composant tiers exposant `/api/mcp` (ex. « MCP Server (HTTP Transport) ») | idem | idem |
+| App **HA-MCP** du Marketplace (`homeassistant-ai/ha-mcp`, port 9583) | `http://homeassistant.local:9583/<chemin secret>` (affiché dans les journaux de l'app) | aucun : le chemin secret *est* l'authentification |
+| `hass-mcp` (`/api/hass_mcp`) ou `ha-mcp-web` (port 8086, `/mcp`) | l'URL exacte du serveur | `mcp_token` si le serveur en exige un |
+
+- **Adresse par défaut** : `home_assistant_url` + `home_assistant_port` + `/api/mcp`. Elle convient à
+  l'intégration intégrée comme aux composants qui réutilisent ce chemin, avec le même jeton.
+- **Autre serveur** : renseignez `mcp_url` (URL complète). Sans `mcp_token`, aucun en-tête
+  `Authorization` n'est envoyé — voulu pour HA-MCP, où le jeton Home Assistant n'a rien à faire dans
+  un autre conteneur.
+- **Aucun secret dans le fichier** : l'en-tête contient `Bearer $HOME_ASSISTANT_TOKEN` (ou
+  `Bearer $MCP_TOKEN` pour `mcp_token`), que la CLI résout depuis l'environnement du terminal.
+- **Détection** : le fichier n'est écrit que si le serveur répond à une poignée de main MCP (6 s de
+  délai maximum). Sinon le journal de l'add-on affiche un avertissement et l'API REST prend le relais.
+- **Sans jeton longue durée** : pas de MCP. Le proxy Supervisor (`http://supervisor/core`) ne relaie
+  pas `/api/mcp` (réponse 502 constatée), alors que les routes REST fonctionnent.
+- **Fichier personnalisé** : si `/local_apps/.agents/mcp.json` existe avec un autre contenu,
+  l'add-on le laisse intact. Supprimez-le pour qu'il soit régénéré au prochain démarrage.
+- Au premier lancement dans un dossier contenant `.agents/`, la CLI demande l'autorisation de charger
+  ces fichiers ; `freebuff --trust-agents` l'accepte d'emblée.
+- `AGENTS.md` impose à l'agent de sauvegarder avant d'écrire, de valider ensuite, et de ne jamais
+  redémarrer Home Assistant ni supprimer quoi que ce soit, y compris via les outils MCP.
 
 ## Garde-fous de l'agent
 

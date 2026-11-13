@@ -5,6 +5,36 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.11
+- 2026-11-13 — Téléphone et tablette : la page servie par ttyd reçoit au build un fragment
+  (`mobile.html`, inséré par `build-index.mjs`) qui ajoute la balise `viewport` manquante, le
+  défilement de la conversation au doigt (glissement traduit en crans de molette, avec inertie) et un
+  champ de saisie compatible avec les claviers à prédiction — sans modifier ttyd ni xterm.js.
+- `tmux.conf` : `mouse on` (molette et défilement tactile entrent en mode copie) et historique de
+  50 000 lignes, pour remonter une longue conversation de l'agent.
+- Le champ de saisie caché de xterm est ramené dans la page et fixé à 16 px : iOS y plaçait mal le
+  curseur d'IME puisqu'il était déporté hors écran, et un champ plus petit déclenchait le zoom
+  automatique de Safari.
+- Soupape de sûreté : si la page ne peut pas être personnalisée, l'add-on sert l'interface d'origine
+  de ttyd et le signale au démarrage au lieu de refuser de démarrer.
+
+## 0.2.10
+- 2026-11-13 — Outils MCP facultatifs : au démarrage, l'add-on écrit
+  `/local_apps/.agents/mcp.json` (format `mcpServers`, transport `http`) pour que la CLI Freebuff
+  dispose des outils MCP de Home Assistant — tableaux de bord, fichiers YAML avec sauvegarde,
+  `check_config`, traces, statistiques — en plus de l'API REST.
+- Un seul fichier couvre les montages courants : intégration intégrée `mcp_server` et composants
+  exposant `/api/mcp` (adresse dérivée de `HA_URL`, jeton longue durée), app HA-MCP du Marketplace
+  (port 9583, chemin secret, sans jeton) et serveurs `hass-mcp` / `ha-mcp-web` via `mcp_url`.
+- Nouvelles options `mcp_url` et `mcp_token`. Aucun secret n'est écrit dans le fichier : l'en-tête
+  contient `Bearer $HOME_ASSISTANT_TOKEN` ou `Bearer $MCP_TOKEN`, résolu par la CLI.
+- Le fichier n'est écrit que si le serveur répond à une poignée de main MCP, et reste intact s'il a
+  été personnalisé. Sinon un avertissement s'affiche et l'API REST prend le relais.
+- Sans jeton longue durée, MCP est ignoré : le proxy Supervisor ne relaie pas `/api/mcp`
+  (502 constaté), ce qui n'affecte pas les routes REST.
+- `AGENTS.md` : section MCP (sauvegarde avant écriture, `check_config` après, jamais de redémarrage
+  ni de suppression via les outils MCP).
+
 ## 0.2.9
 - 2026-11-13 — Retrait des derniers restes de l'API tierce : `patches/` (correctif Freebuff2API et
   son mode d'emploi) est supprimé, plus aucun fichier de l'add-on ne s'y réfère.
