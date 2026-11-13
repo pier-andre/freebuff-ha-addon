@@ -1,19 +1,6 @@
-# Add-on Freebuff : terminal web (ttyd) et proxy API Freebuff2API.
+# Add-on Freebuff : terminal web (ttyd) avec la CLI Freebuff.
 # Base Debian (glibc) : le binaire natif de Freebuff n'est pas prévu pour Alpine/musl.
-ARG FREEBUFF2API_REF=main
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:bookworm
-FROM golang:1.23-bookworm AS api-builder
-ARG FREEBUFF2API_REF
-COPY patches /tmp/patches
-RUN git clone --depth 1 --branch "${FREEBUFF2API_REF}" https://github.com/Quorinex/Freebuff2API.git /src
-WORKDIR /src
-# Correctifs locaux (voir patches/README.md) : liste de modèles lue depuis le
-# catalogue Freebuff et reconstruction du run quand la session free est refusée.
-RUN for p in /tmp/patches/*.patch; do \
-        echo "application de ${p}"; \
-        git apply --whitespace=nowarn -p1 "${p}"; \
-    done \
-    && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /Freebuff2API .
 
 # ttyd n'est pas disponible dans les dépôts Debian Bookworm. Le compiler depuis
 # une version publiée évite de dépendre d'un paquet absent.
@@ -82,7 +69,6 @@ RUN npm install --global freebuff@latest \
     && freebuff --version
 
 COPY run.sh /run.sh
-COPY --from=api-builder /Freebuff2API /usr/local/bin/Freebuff2API
 COPY --from=ttyd-builder /usr/local/bin/ttyd /usr/local/bin/ttyd
 RUN chmod a+x /run.sh
 

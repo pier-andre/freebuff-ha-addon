@@ -59,27 +59,21 @@ autoriser le contenu (`Contents: read/write`) sur les dépôts concernés.
 | `git_name` | Nom utilisé pour les commits créés par l'agent |
 | `git_email` | E-mail utilisé pour les commits créés par l'agent |
 | `extra_packages` | Paquets Debian à installer au démarrage (ex. `python3`, `build-essential`) |
-| `api_enabled` | Active le proxy OpenAI compatible sur le réseau local (désactivé par défaut) |
-| `freebuff_auth_tokens` | Jeton manuel de repli si le fichier d'identifiants CLI n'est pas disponible (facultatif) |
-| `api_keys` | Clé(s) client(s) exigée(s) par l'API (séparées par des virgules) |
 | `github_token` | Jeton d'accès GitHub utilisé par `git` pour push/pull sans saisie manuelle (facultatif) |
+| `home_assistant_token` | Jeton d'accès longue durée d'un compte Home Assistant dédié (facultatif, secret) |
 
-## API sur le réseau local
+## Accès à l'API Home Assistant locale
 
-Activez `api_enabled` et renseignez `api_keys` dans les options. Freebuff2API lit automatiquement
-le jeton `authToken` du fichier de session créé par `freebuff login`; `freebuff_auth_tokens` ne sert
-que de solution de repli manuelle. Si aucun identifiant n'existe au démarrage, connectez-vous dans le
-terminal puis redémarrez l'add-on. Freebuff2API
-écoute ensuite sur le port TCP **11436** de l'hôte Home Assistant. Les clients utilisent l'URL de base
-`http://ADRESSE_IP_DE_HOME_ASSISTANT:11436/v1` et la clé configurée dans `api_keys` comme clé API.
-Les modèles disponibles sont ceux renvoyés par le proxy (par exemple via `/v1/models`). L'API ne
-nécessite pas que le terminal interactif reste ouvert. Le jeton CLI est stocké dans `/data`; protégez
-l'accès à Home Assistant et n'exposez pas le port 11436 à Internet.
+Créez un compte Home Assistant dédié avec les permissions nécessaires, puis générez pour ce compte
+un jeton d'accès longue durée depuis son profil. Enregistrez-le dans `home_assistant_token` dans la
+configuration de l'add-on. Il est injecté dans l'environnement du terminal sous `HOME_ASSISTANT_TOKEN`
+et `HA_TOKEN`; l'adresse locale est disponible sous `HA_URL` (`http://homeassistant:8123`).
+L'option est un champ secret et le jeton n'est pas écrit dans les fichiers de l'add-on. Accordez au
+compte dédié uniquement les accès nécessaires et révoquez son jeton depuis son profil si besoin.
 
 ## Notes
 
-- La CLI Freebuff reste interactive et s'utilise dans le terminal web. Pour les clients OpenAI compatibles,
-  utilisez le proxy Freebuff2API activable dans les options.
+- La CLI Freebuff reste interactive et s'utilise dans le terminal web.
 - Après une mise à jour de l'add-on, `freebuff` est réinstallé à sa dernière version au build.
 - Si vous êtes sur Raspberry Pi / HA Green / HA Yellow (arm64) et que le build échoue,
   retirez `aarch64` de la liste `arch` dans `config.yaml`.

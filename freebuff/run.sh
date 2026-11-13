@@ -16,10 +16,6 @@ config_has_value() {
     [[ -n "$(config_value "$1")" ]]
 }
 
-config_true() {
-    jq -e --arg key "$1" '.[$key] == true' "${OPTIONS_FILE}" >/dev/null
-}
-
 log_info() { printf 'INFO: %s\n' "$*"; }
 log_warning() { printf 'AVERTISSEMENT: %s\n' "$*" >&2; }
 log_error() { printf 'ERREUR: %s\n' "$*" >&2; }
@@ -66,7 +62,7 @@ for package in "${extra_packages[@]}"; do
     fi
 done
 
-# Identifiants de la CLI sous /data (HOME défini plus haut), partagés avec Freebuff2API.
+# Identifiants de la CLI sous /data (HOME défini plus haut).
 export FREEBUFF_CONFIG_DIR="${HOME}"
 umask 077
 mkdir -p "${HOME}/.config/manicode"
@@ -79,6 +75,14 @@ if [[ ! -s "${credentials_file}" ]]; then
             break
         fi
     done
+fi
+
+# Jeton longue durée Home Assistant (facultatif), disponible pour les outils CLI.
+if config_has_value 'home_assistant_token'; then
+    export HOME_ASSISTANT_TOKEN="$(config_value 'home_assistant_token')"
+    export HA_TOKEN="${HOME_ASSISTANT_TOKEN}"
+    export HA_URL='http://homeassistant:8123'
+    log_info "Jeton Home Assistant local chargé"
 fi
 
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"
@@ -95,43 +99,6 @@ echo
 BANNER
 
 cd /local_apps 2>/dev/null || cd /
-
-# API OpenAI-compatible (réseau local), indépendante du terminal interactif.
-api_pid=""
-if config_true 'api_enabled'; then
-    if ! config_has_value 'api_keys'; then
-        log_warning "API activée, mais api_keys est vide. Configurez une clé client pour protéger l'API."
-    else
-        auth_tokens=""
-        if [[ -r "${credentials_file}" ]]; then
-            auth_tokens="$(jq -r '[.. | objects | .authToken? // empty | select(type == "string" and length > 0)] | unique | join(",")' "${credentials_file}" 2>/dev/null || true)"
-        fi
-        # L'option reste disponible comme solution de repli pour les installations
-        # qui utilisaient déjà une valeur manuelle.
-        if [[ -z "${auth_tokens}" ]]; then
-            auth_tokens="$(config_value 'freebuff_auth_tokens')"
-        fi
-
-        if [[ -z "${auth_tokens}" ]]; then
-            log_warning "Aucun jeton Freebuff trouvé. Connectez-vous avec 'freebuff login', puis redémarrez l'add-on pour activer l'API."
-        else
-            export LISTEN_ADDR=':11436'
-            export AUTH_TOKENS="${auth_tokens}"
-            export API_KEYS="$(config_value 'api_keys')"
-            /usr/local/bin/Freebuff2API &
-            api_pid=$!
-            log_info "API Freebuff2API démarrée sur le port 11436 avec le jeton de la CLI"
-        fi
-    fi
-fi
-
-cleanup() {
-    if [[ -n "${api_pid}" ]]; then
-        kill "${api_pid}" 2>/dev/null || true
-        wait "${api_pid}" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT INT TERM
 
 export TTYD=1
 log_info "Terminal disponible dans la barre latérale : Freebuff"

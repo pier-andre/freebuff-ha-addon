@@ -1,7 +1,7 @@
 # Freebuff pour Home Assistant
 
 Un add-on qui fournit la CLI [Freebuff](https://freebuff.com/cli) dans un terminal web intégré à Home Assistant,
-et peut aussi exposer un proxy API compatible OpenAI sur le réseau local.
+et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistant.
 
 [![Ouvrir votre instance Home Assistant et afficher le dialogue d’ajout du dépôt avec l’URL pré-remplie.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon) [![Ouvrir votre instance Home Assistant et afficher la page de l’add-on Freebuff.](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=dc337d8e_freebuff&repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon)
 
@@ -11,7 +11,7 @@ et peut aussi exposer un proxy API compatible OpenAI sur le réseau local.
 - ouvre un terminal web (ttyd + tmux) intégré à Home Assistant via Ingress ;
 - monte `/local_apps` (vos add-ons locaux) et `/homeassistant` (votre configuration HA) ;
 - garde la session Freebuff dans `/data`, donc vous ne vous reconnectez pas après un redémarrage.
-- peut démarrer [Freebuff2API](https://github.com/Quorinex/Freebuff2API) sur le port TCP 11436 pour les clients locaux.
+- peut recevoir un jeton Home Assistant local dans son environnement pour accéder à l'API Home Assistant.
 
 ## Installation
 
@@ -54,19 +54,15 @@ freebuff                      # l'agent démarre
 
 Pour un dépôt GitHub classique, clonez-le dans `/share` (ou `/local_apps`) et lancez `freebuff` dedans.
 
-### API compatible OpenAI sur le réseau local
+### Accès à Home Assistant
 
-Dans les options de l'add-on, activez `api_enabled` et définissez `api_keys`. Le proxy réutilise le jeton
-de la session CLI, stocké dans `/data/freebuff/.config/manicode/credentials.json`. Connectez-vous avec
-`freebuff login` avant d'activer l'API; si vous vous connectez après son démarrage, redémarrez l'add-on.
-L'API est disponible sur `http://ADRESSE_IP_DE_HOME_ASSISTANT:11436/v1`. Le client doit utiliser la clé
-définie dans `api_keys`. L'API est désactivée par défaut et ne démarre pas sans clé client. N'exposez pas
-le port 11436 à Internet.
+Vous pouvez enregistrer un jeton longue durée d'un compte Home Assistant dédié dans l'option secrète
+`home_assistant_token`. Le terminal le reçoit dans `HOME_ASSISTANT_TOKEN` et `HA_TOKEN`, avec l'adresse
+locale `HA_URL=http://homeassistant:8123`. Limitez les permissions du compte au strict nécessaire.
 
 ## Limites connues
 
-- La CLI Freebuff est interactive et nécessite le terminal web. Pour les clients OpenAI compatibles,
-  activez plutôt le proxy Freebuff2API dans les options de l'add-on.
+- La CLI Freebuff est interactive et nécessite le terminal web.
 - Dépend de l'architecture : `amd64` fonctionne ; `aarch64` (Raspberry Pi, HA Green/Yellow)
   dépend de l'existence d'un binaire Linux ARM côté Freebuff. Si le build échoue sur ARM,
   retirez `aarch64` de la liste `arch` dans `config.yaml`.
