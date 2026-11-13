@@ -128,6 +128,15 @@ if ! bash /usr/local/share/freebuff/mcp-config.sh; then
     log_warning "Configuration MCP non appliquée : l'agent garde l'API REST"
 fi
 
+# `mcp-config.sh` tourne dans un sous-shell : son export ne remonte pas jusqu'ici.
+# On exporte donc `mcp_token` dans le shell dont hérite le terminal, pour que
+# l'en-tête `Bearer $MCP_TOKEN` écrit dans .agents/mcp.json soit résolu.
+mcp_token_opt="$(config_value 'mcp_token')"
+if [[ -n "${mcp_token_opt}" ]]; then
+    export MCP_TOKEN="${mcp_token_opt}"
+    log_info "Jeton MCP chargé pour le terminal (mcp_token)"
+fi
+
 # Les dossiers montés appartiennent à root : évite les erreurs "dubious ownership"
 git config --global --add safe.directory '*'
 

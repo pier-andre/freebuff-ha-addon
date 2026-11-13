@@ -82,14 +82,20 @@ origin_of() {
 
 mcp_header_token=''
 probe_token=''
-if [[ -n "${mcp_token_opt}" ]]; then
+mcp_same_origin=''
+[[ "$(origin_of "${mcp_endpoint}")" == "$(origin_of "${ha_url}")" ]] && mcp_same_origin=1
+
+# Sur la même origine que Home Assistant, c'est `$HOME_ASSISTANT_TOKEN` qui est
+# écrit : run.sh l'exporte toujours, donc le terminal le résout. `$MCP_TOKEN` ne
+# l'est que si l'option est renseignée, et un export fait ici ne remonte pas vers
+# run.sh (ce script tourne dans un sous-shell) : un en-tête vide en découlait.
+if [[ -n "${mcp_same_origin}" && -n "${HOME_ASSISTANT_TOKEN:-}" ]]; then
+    mcp_header_token='$HOME_ASSISTANT_TOKEN'
+    probe_token="${HOME_ASSISTANT_TOKEN}"
+elif [[ -n "${mcp_token_opt}" ]]; then
     export MCP_TOKEN="${mcp_token_opt}"
     mcp_header_token='$MCP_TOKEN'
     probe_token="${MCP_TOKEN}"
-elif [[ -n "${HOME_ASSISTANT_TOKEN:-}" ]] \
-    && [[ "$(origin_of "${mcp_endpoint}")" == "$(origin_of "${ha_url}")" ]]; then
-    mcp_header_token='$HOME_ASSISTANT_TOKEN'
-    probe_token="${HOME_ASSISTANT_TOKEN}"
 fi
 
 # --- Poignée de main ---------------------------------------------------------

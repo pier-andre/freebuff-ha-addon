@@ -5,6 +5,14 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.13
+- 2026-11-13 — Jeton MCP : sur la même origine que Home Assistant, le fichier référence de nouveau
+  `$HOME_ASSISTANT_TOKEN`, que `run.sh` exporte toujours. Depuis le passage à `mcp-config.sh`,
+  l'export de `$MCP_TOKEN` restait dans le sous-shell et le terminal ne le voyait plus : l'en-tête
+  partait vide, d'où un « Login attempt failed » dans Home Assistant à chaque connexion de la CLI.
+- `run.sh` exporte désormais `mcp_token` dans le shell dont hérite le terminal, pour les serveurs
+  MCP d'une autre origine qui en demandent un.
+
 ## 0.2.12
 - 2026-11-13 — Correction du fichier MCP : `/local_apps/.agents/mcp.json` suit désormais les
   options. Il était écrit une seule fois puis considéré comme « personnalisé », si bien qu'un
