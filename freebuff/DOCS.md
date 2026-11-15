@@ -131,6 +131,11 @@ styles et des écouteurs d'événements ajoutés à la page.
   d'inertie quand le geste est rapide ; un geste horizontal reste au navigateur.
 - **Mise en page** : la balise `viewport` manquait (iOS affichait la page en 980 px de large puis la
   dézoomait) ; plus de rebond élastique ni de « tirer pour rafraîchir » sur la zone du terminal.
+- **Clavier virtuel** : le clavier ne réduit pas la page, il la recouvre — la ligne de saisie et la
+  barre d'état de tmux passaient donc dessous. La page prend maintenant la hauteur de la vue
+  visuelle (`visualViewport`) et redemande à xterm de recalculer ses lignes quand le clavier
+  s'ouvre, se ferme ou tourne l'écran : le terminal se réduit au-dessus du clavier, puis reprend sa
+  taille. Au pire, la page se recale une demi-seconde après le clic dans un champ.
 - **Claviers à prédiction** : le champ de saisie caché de xterm, déporté hors écran (`left:-9999em`)
   et de taille nulle, est ramené dans la page et fixé à 16 px — c'est ce positionnement qui faisait
   perdre la composition à SwiftKey, et une taille inférieure à 16 px qui déclenchait le zoom

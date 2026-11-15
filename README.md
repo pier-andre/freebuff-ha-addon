@@ -23,8 +23,9 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
   **Informations** ;
 - adapte le terminal au téléphone : défilement de la conversation au doigt (glissement traduit en
   crans de molette vers tmux, historique de 50 000 lignes), balise `viewport`, champ de saisie
-  compatible avec les claviers à prédiction (SwiftKey, Gboard) et bouton **Coller** qui évite de
-  taper un texte caractère par caractère.
+  compatible avec les claviers à prédiction (SwiftKey, Gboard), hauteur calée sur la vue visuelle
+  pour que la ligne de saisie reste au-dessus du clavier, et bouton **Coller** qui évite de taper un
+  texte caractère par caractère.
 
 ## Installation
 

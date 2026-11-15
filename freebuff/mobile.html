@@ -370,5 +370,62 @@
   }
   window.addEventListener("load", buildPasteUi);
   setTimeout(buildPasteUi, 2000);
+
+  // --- Clavier virtuel --------------------------------------------------------
+  // Sur téléphone, le clavier ne réduit pas la page : la vue visuelle
+  // (visualViewport) rétrécit alors que html et body gardent leur hauteur, si
+  // bien que la dernière ligne du terminal — la ligne de saisie et la barre
+  // d'état de tmux — reste cachée sous le clavier. On cale la hauteur de la page
+  // sur la vue visuelle, puis on redemande à xterm de recalculer ses lignes
+  // (`window.term.fit()`, exposé par ttyd) : la nouvelle taille part vers le
+  // pty, tmux se réajuste et la ligne de saisie remonte au-dessus du clavier.
+  var viewportFrame = 0;
+
+  function fitToViewport() {
+    viewportFrame = 0;
+    var view = window.visualViewport;
+    if (!view) return;
+    var height = Math.round(view.height);
+    if (height < 1) return;
+    document.documentElement.style.height = height + "px";
+    if (document.body) document.body.style.height = height + "px";
+    var term = window.term;
+    if (!term || typeof term.fit !== "function") return;
+    try {
+      term.fit();
+      // `fit()` change le nombre de lignes sans déplacer le viewport : sans ce
+      // recentrage, le curseur peut rester sous le clavier après le calcul.
+      if (typeof term.scrollToBottom === "function") term.scrollToBottom();
+    } catch (error) {
+      // terminal pas encore ouvert (page en cours de chargement)
+    }
+  }
+
+  function scheduleFit() {
+    if (viewportFrame) return;
+    viewportFrame = window.requestAnimationFrame
+      ? window.requestAnimationFrame(fitToViewport)
+      : setTimeout(fitToViewport, 0);
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", scheduleFit);
+    // iOS déplace aussi la vue visuelle quand le clavier s'ouvre : sans cet
+    // écouteur, aucun `resize` n'est émis et rien n'est recalculé.
+    window.visualViewport.addEventListener("scroll", scheduleFit);
+  }
+  window.addEventListener("resize", scheduleFit);
+  window.addEventListener("orientationchange", scheduleFit);
+  // Le clavier s'ouvre après un délai d'animation sur certaines versions : on
+  // repasse une fois l'animation terminée, et au retour du clavier.
+  document.addEventListener("focusin", function (event) {
+    if (!(event.target instanceof Element)) return;
+    if (!event.target.closest("textarea, input")) return;
+    setTimeout(scheduleFit, 300);
+  }, true);
+  document.addEventListener("focusout", scheduleFit, true);
+  setTimeout(scheduleFit, 500);
+  setTimeout(scheduleFit, 2000);
+  scheduleFit();
 })();
 </script>

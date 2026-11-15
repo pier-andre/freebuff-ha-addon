@@ -16,6 +16,9 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
   de collage hors de portée du clavier. Le texte part d'un bloc via `window.term.paste()` au lieu
   d'être tapé caractère par caractère — le champ de saisie de xterm, invisible, ne permettait aucun
   appui long.
+- Clavier mobile : la page prend la hauteur de `visualViewport` et xterm recalcule ses lignes à
+  l'ouverture du clavier. La hauteur de `html`/`body` était figée à 100 % et le clavier ne réduit pas
+  la page : la ligne de saisie, en bas, restait sous le clavier, sans cible pour l'appui long.
 
 ## 0.2.15
 - 2026-11-13 — Sur la voie de migration, `HA_MCP_TOKEN` est de nouveau exporté vers le terminal : le
