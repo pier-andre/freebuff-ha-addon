@@ -101,6 +101,24 @@ que si les deux nouvelles sont vides, et cela retire deux champs de la page de c
 restent déclarées dans `config.yaml` parce que le Supervisor supprime de `options.json` toute option
 absente du schéma : les retirer tout de suite aurait effacé l'URL avant la reprise.
 
+## Raccourcis du terminal
+
+Deux commandes sont disponibles dans le terminal, définies au démarrage dans `/etc/profile.d` :
+
+| Commande | Effet |
+| --- | --- |
+| `fr` | lance l'agent dans le dossier courant, avec `--trust-agents` (équivalent de `freebuff --trust-agents`) |
+| `ex` | arrête l'add-on depuis le terminal (court pour *exit*), comme le bouton **Arrêter** de Home Assistant |
+
+`fr` charge `.agents/` — dont le `mcp.json` écrit par l'add-on — sans reposer la question à chaque
+démarrage. Pour changer de dossier, `cd` puis `fr`.
+
+`ex` appelle l'API du Supervisor (`POST /addons/self/stop`) avec le jeton du conteneur : l'add-on
+s'arrête sans repasser par Home Assistant. L'arrêt est propre dans les deux cas — bouton
+**Arrêter** ou `ex` : `run.sh` transmet le signal à ttyd et sort avec le code 0, donc l'onglet
+**Informations** affiche un arrêt normal au lieu d'un état d'erreur. Si `ex` semble ne rien faire, l'add-on est peut-être déjà arrêté, ou le Supervisor a refusé la requête (elle
+n'est alors pas visible, le conteneur n'ayant pas encore été arrêté).
+
 ## Téléphone et tablette
 
 La page servie par ttyd reçoit au build un petit fragment (`freebuff/mobile.html`, inséré par
@@ -118,6 +136,14 @@ styles et des écouteurs d'événements ajoutés à la page.
   perdre la composition à SwiftKey, et une taille inférieure à 16 px qui déclenchait le zoom
   automatique de Safari. Autocorrection et majuscule automatique sont désactivées (les commandes
   sont sensibles à la casse) et `enterkeyhint="send"` annonce une touche d'envoi.
+
+- **Collage** : un bouton **Coller** est fixé en haut à droite du terminal — donc au-dessus du
+  clavier, jamais recouvert. Il envoie le presse-papiers au terminal en une fois : plus besoin de
+  taper caractère par caractère, ce que le champ de saisie invisible de xterm rendait inévitable au
+  doigt. En HTTPS (Ingress), le presse-papiers est lu directement ; si le navigateur refuse l'accès
+  (page servie en HTTP, permission refusée), un champ de collage s'ouvre en haut de la page :
+  appui long dedans pour coller, puis **Envoyer**. Le texte est transmis comme un collage clavier,
+  donc bash/tmux le reçoit d'un bloc et la ligne reste modifiable avant **Entrée**.
 
 Ce qui reste limité par xterm.js : la prédiction s'affiche dans le clavier, pas dans le terminal, et
 un mot remplacé par le clavier peut arriver en plusieurs morceaux. Pour les commandes, mieux vaut

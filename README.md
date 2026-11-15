@@ -18,9 +18,13 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
 - ajoute les outils MCP de Home Assistant quand un serveur MCP est disponible — intégration intégrée
   (`/api/mcp`), composant équivalent, ou app HA-MCP du Marketplace via `mcp_url` — pour éditer les
   tableaux de bord, les fichiers YAML avec sauvegarde et les traces ; l'API REST reste le repli ;
+- lance l'agent d'un mot (`fr`, soit `freebuff --trust-agents`) et arrête l'add-on depuis le
+  terminal (`ex`) ; l'arrêt est propre dans les deux cas, sans état d'erreur dans l'onglet
+  **Informations** ;
 - adapte le terminal au téléphone : défilement de la conversation au doigt (glissement traduit en
-  crans de molette vers tmux, historique de 50 000 lignes), balise `viewport` et champ de saisie
-  compatible avec les claviers à prédiction (SwiftKey, Gboard).
+  crans de molette vers tmux, historique de 50 000 lignes), balise `viewport`, champ de saisie
+  compatible avec les claviers à prédiction (SwiftKey, Gboard) et bouton **Coller** qui évite de
+  taper un texte caractère par caractère.
 
 ## Installation
 
@@ -58,7 +62,8 @@ pull request avec le `version:` de `freebuff/config.yaml` incrémenté et une li
 
 ```bash
 cd /local_apps/mon-add-on     # un add-on en cours de développement
-freebuff                      # l'agent démarre
+fr                            # = freebuff --trust-agents : l'agent démarre
+ex                            # arrête l'add-on proprement depuis le terminal
 ```
 
 Pour un dépôt GitHub classique, clonez-le dans `/share` (ou `/local_apps`) et lancez `freebuff` dedans.

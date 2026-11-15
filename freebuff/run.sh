@@ -218,21 +218,45 @@ if [[ -f "${agents_src}" ]]; then
     fi
 fi
 
-# Rappel affiché à l'ouverture de chaque terminal
-cat > /etc/profile.d/00-freebuff.sh <<'BANNER'
+# Raccourcis et rappel affichés à l'ouverture de chaque terminal.
+# Le fichier est réécrit à chaque démarrage pour suivre les mises à jour de l'add-on.
+cat > /etc/profile.d/00-freebuff.sh <<'PROFILE'
+# `bash -l` (tmux) lit /etc/profile, donc ce fichier : les alias et la fonction
+# ci-dessous n'existent que dans les shells interactifs.
+case "$-" in
+    *i*)
+        # `fr` : lancer l'agent dans le dossier courant. `--trust-agents` charge
+        # .agents/ (dont le mcp.json écrit par l'add-on) sans poser la question
+        # à chaque démarrage.
+        alias fr='freebuff --trust-agents'
+
+        # Arrêt propre de l'add-on depuis le terminal : même effet que le bouton
+        # « Arrêter », sans repasser par Home Assistant. Le Supervisor envoie
+        # SIGTERM au conteneur et run.sh sort avec 0 (pas d'état d'erreur).
+        freebuff_stop_addon() {
+            printf "Arret de l'add-on...\n"
+            curl -s -o /dev/null -X POST \
+                -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+                'http://supervisor/addons/self/stop' || true
+        }
+        alias ex='freebuff_stop_addon'
+        ;;
+esac
+
 echo
 echo "  Freebuff - Home Assistant"
 echo "  Première utilisation :  freebuff login"
-echo "  Ensuite :               cd /local_apps/mon-add-on && freebuff"
+echo "  Lancer l'agent :        fr      (= freebuff --trust-agents)"
+echo "  Arreter l'add-on :      ex      (= arret propre)"
+echo "  Coller du texte :       bouton Coller en haut a droite (telephone)"
 echo "  Add-ons locaux : /local_apps     Configuration HA : /homeassistant"
 echo "  Garde-fous agent : /local_apps/AGENTS.md (lecture obligatoire)"
 echo "  Outils MCP : /local_apps/.agents/mcp.json (sinon API REST)"
-echo "  Première ouverture : autorisez le chargement de .agents (ou freebuff --trust-agents)"
 echo "  Valider la config HA :  curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
 echo "                            -H 'Content-Type: application/json' -d '{}' \\"
 echo "                            \"\$HA_URL/api/services/homeassistant/check_config\""
 echo
-BANNER
+PROFILE
 
 cd /local_apps 2>/dev/null || cd /
 
@@ -252,4 +276,44 @@ else
 fi
 
 log_info "Terminal disponible dans la barre latérale : Freebuff"
-ttyd "${ttyd_args[@]}" tmux -u new -A -s freebuff bash -l
+
+# --- Arrêt propre ------------------------------------------------------------
+# Le Supervisor arrête un add-on en envoyant SIGTERM au PID 1, c'est-à-dire à ce
+# script. En PID 1, le noyau ne livre pas SIGTERM (ni SIGINT) à un processus qui
+# n'a pas de gestionnaire : bash survit au signal, ttyd ne reçoit rien, et le
+# conteneur est tué au bout du délai de grâce (code 137) — l'onglet Informations
+# présente alors l'arrêt comme une erreur. Deux pièces sont donc nécessaires :
+# une trappe, qui rend le signal livrable, et ttyd en arrière-plan, une trappe
+# attendant la fin d'un enfant au premier plan. Le script sort ensuite avec 0
+# au lieu du 143 de SIGTERM.
+ttyd_pid=''
+shutdown_requested='no'
+on_stop_signal() {
+    shutdown_requested='yes'
+    if [[ -n "${ttyd_pid}" ]]; then
+        kill -TERM "${ttyd_pid}" 2>/dev/null || true
+    fi
+}
+trap on_stop_signal TERM INT
+
+ttyd "${ttyd_args[@]}" tmux -u new -A -s freebuff bash -l &
+ttyd_pid=$!
+log_info "ttyd démarré (PID ${ttyd_pid})"
+
+ttyd_status=0
+while :; do
+    # `wait` est interrompu par la trappe : on reboucle tant que ttyd vit.
+    wait "${ttyd_pid}" || ttyd_status=$?
+    kill -0 "${ttyd_pid}" 2>/dev/null || break
+done
+ttyd_pid=''
+
+if [[ "${shutdown_requested}" == 'yes' ]]; then
+    log_info "Arrêt demandé : terminal fermé, sortie propre"
+    exit 0
+fi
+
+if [[ "${ttyd_status}" -ne 0 ]]; then
+    log_error "ttyd s'est arrêté avec le code ${ttyd_status}"
+fi
+exit "${ttyd_status}"

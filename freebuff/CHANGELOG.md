@@ -5,6 +5,18 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.16
+- 2026-11-15 — Arrêt propre : `run.sh` lance ttyd en arrière-plan et relaie SIGTERM/SIGINT, puis
+  sort avec 0. Sans trappe, bash (PID 1) diffère le signal tant que ttyd tourne, le conteneur est
+  tué au bout du délai de grâce (code 137) et l'onglet **Informations** affiche un état d'erreur
+  après un arrêt depuis le bouton **Arrêter**.
+- Raccourcis du terminal : `fr` lance `freebuff --trust-agents`, `ex` (*exit*) arrête l'add-on depuis
+  le terminal via l'API du Supervisor (`POST /addons/self/stop`).
+- Bouton **Coller** fixé en haut de la page mobile : lecture du presse-papiers en HTTPS, sinon champ
+  de collage hors de portée du clavier. Le texte part d'un bloc via `window.term.paste()` au lieu
+  d'être tapé caractère par caractère — le champ de saisie de xterm, invisible, ne permettait aucun
+  appui long.
+
 ## 0.2.15
 - 2026-11-13 — Sur la voie de migration, `HA_MCP_TOKEN` est de nouveau exporté vers le terminal : le
   fichier `.agents/mcp.json` référence `$HA_MCP_TOKEN` alors que `ha_mcp_token` est encore vide, et

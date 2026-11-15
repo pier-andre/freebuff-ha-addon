@@ -37,6 +37,87 @@
     touch-action: none;
     overscroll-behavior: contain;
   }
+
+  /* Bouton « Coller » : ttyd n'en fournit aucun, et le champ de saisie de xterm
+     est volontairement invisible (1 px, transparent). Sur téléphone, aucune
+     cible ne permet donc d'appui long pour ouvrir le menu « Coller » du
+     système. Le bouton est fixé en haut de la page, jamais recouvert par le
+     clavier. */
+  #freebuff-paste {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: calc(env(safe-area-inset-right, 0px) + 8px);
+    z-index: 10000;
+    margin: 0;
+    padding: 10px 14px;
+    font: 600 15px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #fff;
+    background: rgba(24, 24, 27, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #freebuff-paste-panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    left: calc(env(safe-area-inset-left, 0px) + 8px);
+    right: calc(env(safe-area-inset-right, 0px) + 8px);
+    z-index: 10001;
+    display: none;
+    max-height: 60vh;
+    overflow: auto;
+    padding: 10px;
+    background: rgba(24, 24, 27, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+  }
+
+  #freebuff-paste-panel.freebuff-open {
+    display: block;
+  }
+
+  /* 16 px : en dessous, Safari zoome à la prise de focus. */
+  #freebuff-paste-field {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 90px;
+    padding: 8px;
+    font: 16px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #fff;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    resize: none;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .freebuff-paste-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+
+  .freebuff-paste-actions button {
+    margin: 0;
+    padding: 9px 16px;
+    font: 600 15px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #fff;
+    background: #2563eb;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .freebuff-paste-actions .freebuff-paste-cancel {
+    background: #3f3f46;
+  }
 </style>
 <script>
 (function () {
@@ -166,5 +247,128 @@
   window.addEventListener("load", tuneInput);
   setTimeout(tuneInput, 500);
   setTimeout(tuneInput, 2000);
+
+  // --- Collage ----------------------------------------------------------------
+  // ttyd n'a pas de bouton coller et son champ de saisie est invisible : au
+  // doigt, il n'existe aucune cible pour un appui long, donc le menu « Coller »
+  // du système ne s'ouvre jamais. Deux voies, dans cet ordre :
+  //   1. l'API presse-papiers, disponible quand l'Ingress est servi en HTTPS :
+  //      lecture directe puis envoi au terminal ;
+  //   2. un champ de collage fixé en HAUT de la page, donc jamais recouvert par
+  //      le clavier, où l'appui long ouvre le menu habituel.
+  // L'envoi passe par `window.term.paste()` de ttyd : xterm écrit dans le pty
+  // comme pour un collage clavier (collage entre crochets de bash/tmux compris).
+  var PASTE_ID = "freebuff-paste";
+  var PASTE_PANEL_ID = "freebuff-paste-panel";
+  var PASTE_FIELD_ID = "freebuff-paste-field";
+  var pastePanel = null;
+
+  function sendToTerminal(text) {
+    if (!text) return false;
+    var term = window.term;
+    if (term && typeof term.paste === "function") {
+      term.paste(text);
+    } else {
+      // ttyd n'expose plus window.term : xterm écoute aussi `paste` sur .xterm
+      // et y lit clipboardData. Repli sans garantie selon le navigateur.
+      var data = null;
+      try {
+        data = new DataTransfer();
+        data.setData("text/plain", text);
+      } catch (error) {
+        data = null;
+      }
+      var el = terminal();
+      if (!el || !data) return false;
+      el.dispatchEvent(new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: data
+      }));
+    }
+    if (term && typeof term.focus === "function") {
+      try {
+        term.focus();
+      } catch (error) {
+        // terminal déjà détruit (page en cours de fermeture)
+      }
+    }
+    return true;
+  }
+
+  function openPastePanel() {
+    if (!pastePanel) return;
+    var field = document.getElementById(PASTE_FIELD_ID);
+    pastePanel.classList.add("freebuff-open");
+    if (field) {
+      field.value = "";
+      field.focus(); // clavier ouvert : le champ reste en haut, donc visible
+    }
+  }
+
+  function closePastePanel() {
+    if (pastePanel) pastePanel.classList.remove("freebuff-open");
+  }
+
+  function submitPastePanel() {
+    var field = document.getElementById(PASTE_FIELD_ID);
+    if (!field) return;
+    var text = field.value;
+    if (!text) {
+      closePastePanel();
+      return;
+    }
+    // Si le terminal n'est pas encore prêt, on garde le texte dans le champ.
+    if (!sendToTerminal(text)) return;
+    field.value = "";
+    closePastePanel();
+  }
+
+  function buildPasteUi() {
+    if (!document.body || document.getElementById(PASTE_ID)) return;
+
+    var button = document.createElement("button");
+    button.id = PASTE_ID;
+    button.type = "button";
+    button.textContent = "Coller";
+    button.setAttribute("aria-label", "Coller le presse-papiers dans le terminal");
+    button.addEventListener("click", function () {
+      if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+        navigator.clipboard.readText().then(function (text) {
+          if (!sendToTerminal(text)) openPastePanel();
+        }, openPastePanel);
+      } else {
+        // Contexte non sécurisé (HTTP) ou API absente : champ de collage.
+        openPastePanel();
+      }
+    });
+
+    pastePanel = document.createElement("div");
+    pastePanel.id = PASTE_PANEL_ID;
+    pastePanel.innerHTML =
+      '<textarea id="' + PASTE_FIELD_ID + '" rows="3" ' +
+        'autocapitalize="off" autocorrect="off" spellcheck="false" ' +
+        'placeholder="Collez ici (appui long) puis Envoyer"></textarea>' +
+      '<div class="freebuff-paste-actions">' +
+        '<button type="button" class="freebuff-paste-cancel">Annuler</button>' +
+        '<button type="button" class="freebuff-paste-send">Envoyer</button>' +
+      '</div>';
+
+    pastePanel.querySelector(".freebuff-paste-send")
+      .addEventListener("click", submitPastePanel);
+    pastePanel.querySelector(".freebuff-paste-cancel")
+      .addEventListener("click", closePastePanel);
+
+    document.body.appendChild(button);
+    document.body.appendChild(pastePanel);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", buildPasteUi);
+  } else {
+    buildPasteUi();
+  }
+  window.addEventListener("load", buildPasteUi);
+  setTimeout(buildPasteUi, 2000);
 })();
 </script>
