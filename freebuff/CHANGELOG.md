@@ -5,6 +5,7 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+- 2026-11-15 — `nodejs/node` 26.13.0 → 26.13.1 (mise à jour correctif)
 ## 0.2.15
 - 2026-11-13 — Sur la voie de migration, `HA_MCP_TOKEN` est de nouveau exporté vers le terminal : le
   fichier `.agents/mcp.json` référence `$HA_MCP_TOKEN` alors que `ha_mcp_token` est encore vide, et
