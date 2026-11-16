@@ -1,5 +1,7 @@
 # Freebuff pour Home Assistant
 
+**Français** · [English](README.en.md)
+
 Un add-on qui fournit la CLI [Freebuff](https://freebuff.com/cli) dans un terminal web intégré à Home Assistant,
 et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistant.
 
@@ -59,7 +61,7 @@ Le fichier `renovate.json` à la racine du dépôt est lu par l'add-on
 pull request avec le `version:` de `freebuff/config.yaml` incrémenté et une ligne ajoutée dans
 `freebuff/CHANGELOG.md`. Après fusion, la boutique la propose au prochain « Vérifier les mises à jour ».
 
-5. Ouvrez **Freebuff** dans la barre latérale, puis tapez `freebuff login` et suivez le lien affiché
+4. Ouvrez **Freebuff** dans la barre latérale, puis tapez `freebuff login` et suivez le lien affiché
    sur votre téléphone ou votre ordinateur. Revenez dans le terminal : c'est connecté.
 
 ## Utilisation
