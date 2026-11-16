@@ -1,115 +1,113 @@
-# Freebuff pour Home Assistant
+# Freebuff for Home Assistant
 
-**Français** · [English](README.en.md)
+**English** · [Français](README.fr.md)
 
-Un add-on qui fournit la CLI [Freebuff](https://freebuff.com/cli) dans un terminal web intégré à Home Assistant,
-et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistant.
+An add-on that provides the [Freebuff](https://freebuff.com/cli) CLI in a web terminal inside Home
+Assistant, and can hold a dedicated token for the local Home Assistant API.
 
-[![Ouvrir votre instance Home Assistant et afficher le dialogue d’ajout du dépôt avec l’URL pré-remplie.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon) [![Ouvrir votre instance Home Assistant et afficher la page de l’add-on Freebuff.](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=dc337d8e_freebuff&repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon)
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon) [![Open your Home Assistant instance and show the dashboard of an add-on.](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=dc337d8e_freebuff&repository_url=https%3A%2F%2Fgithub.com%2Fpier-andre%2Ffreebuff-ha-addon)
 
-## Ce que fait l'add-on
+## What the add-on does
 
-- installe Node.js + `freebuff` (CLI officielle, toujours la dernière version au moment du build) ;
-- ouvre un terminal web (ttyd + tmux) intégré à Home Assistant via Ingress ;
-- monte `/local_apps` (vos add-ons locaux) et `/homeassistant` (votre configuration HA) ;
-- garde la session Freebuff dans `/data`, donc vous ne reconnectez pas après un redémarrage ;
-- donne à l'agent un accès à l'API Home Assistant : adresse et port configurables, jeton longue durée
-  dans un champ secret (ou, à défaut, le proxy Supervisor) ;
-- installe `/local_apps/AGENTS.md`, le contexte et les garde-fous de l'agent : changements non
-  destructifs, sauvegarde préalable, validation de la configuration avant de poursuivre ;
-- ajoute les outils MCP de Home Assistant quand un serveur MCP est disponible — intégration intégrée
-  (`/api/mcp`), composant équivalent, ou app HA-MCP du Marketplace via `mcp_url` — pour éditer les
-  tableaux de bord, les fichiers YAML avec sauvegarde et les traces ; l'API REST reste le repli ;
-- lance l'agent d'un mot (`fr`, soit `freebuff --trust-agents`) et arrête l'add-on depuis le
-  terminal (`ex`) ; l'arrêt est propre dans les deux cas, sans état d'erreur dans l'onglet
-  **Informations** ;
-- adapte le terminal au téléphone : défilement de la conversation au doigt (glissement traduit en
-  crans de molette vers tmux, historique de 50 000 lignes), balise `viewport`, champ de saisie
-  compatible avec les claviers à prédiction (SwiftKey, Gboard), hauteur calée sur la vue visuelle
-  pour que la ligne de saisie reste au-dessus du clavier, et bouton **Coller** qui évite de taper un
-  texte caractère par caractère ;
-- parle **français et anglais** : la bannière du terminal répète chaque ligne dans les deux langues,
-  et les contrôles de la page mobile (**Coller**/**Paste**, **Annuler**/**Cancel**,
-  **Envoyer**/**Send**) suivent la langue de l'interface Home Assistant, puis celle du navigateur.
+- installs Node.js + `freebuff` (the official CLI, always the latest version at build time);
+- opens a web terminal (ttyd + tmux) inside Home Assistant through Ingress;
+- mounts `/local_apps` (your local add-ons) and `/homeassistant` (your HA configuration);
+- keeps the Freebuff session in `/data`, so you do not log in again after a restart;
+- gives the agent access to the Home Assistant API: configurable address and port, a long-lived
+  token in a secret field (or the Supervisor proxy as a fallback);
+- installs `/local_apps/AGENTS.md`, the agent's context and guardrails: non-destructive changes,
+  backup before writing, configuration validation before going further;
+- adds the Home Assistant MCP tools when an MCP server is available — the built-in integration
+  (`/api/mcp`), an equivalent custom component, or the HA-MCP add-on from the Marketplace through
+  `mcp_url` — to edit dashboards, YAML files with a backup, and traces; the REST API remains the
+  fallback;
+- starts the agent with one word (`fr`, i.e. `freebuff --trust-agents`) and stops the add-on from
+  the terminal (`ex`); both stop cleanly, with no error state in the **Log** tab;
+- adapts the terminal to a phone: finger scrolling of the conversation (swipe translated into wheel
+  steps for tmux, 50,000-line history), a `viewport` tag, an input field that works with predictive
+  keyboards (SwiftKey, Gboard), a height tied to the visual viewport so the input line stays above
+  the keyboard, and a **Paste** button that saves typing a text character by character;
+- speaks **French and English**: the terminal banner repeats every line in both languages, and the
+  mobile page controls (**Coller**/**Paste**, **Annuler**/**Cancel**, **Envoyer**/**Send**) follow
+  the Home Assistant interface language, then the browser's.
 
 ## Installation
 
-L'add-on vit dans le dossier `freebuff/` de ce dépôt, et son nom est son identifiant :
+The add-on lives in the `freebuff/` folder of this repository, and its name is its identifier:
 `freebuff/config.yaml`, `freebuff/Dockerfile`, `freebuff/run.sh`, `freebuff/DOCS.md`,
-`freebuff/CHANGELOG.md` et `freebuff/AGENTS.md` doivent rester ensemble. `repository.yaml` et
-`renovate.json` restent à la racine du dépôt.
+`freebuff/CHANGELOG.md` and `freebuff/AGENTS.md` must stay together. `repository.yaml` and
+`renovate.json` stay at the root of the repository.
 
-1. Dans Home Assistant : **Paramètres → Modules complémentaires → Boutique des modules complémentaires**
-   → menu ⋮ → **Dépôts** → collez `https://github.com/pier-andre/freebuff-ha-addon` → **Ajouter**.
-   Le dépôt doit rester **public** : la boutique clone sans identifiants.
+1. In Home Assistant: **Settings → Add-ons → Add-on Store** → ⋮ menu → **Repositories** → paste
+   `https://github.com/pier-andre/freebuff-ha-addon` → **Add**.
+   The repository must stay **public**: the store clones it without credentials.
 
-2. L'add-on « Freebuff CLI » apparaît dans la boutique. **Installer**, puis **Démarrer**.
-   (Comptez plusieurs minutes pour la première installation : Node.js + Freebuff sont téléchargés.)
+2. The "Freebuff CLI" add-on appears in the store. **Install**, then **Start**.
+   (Allow several minutes for the first installation: Node.js + Freebuff are downloaded.)
 
-3. Home Assistant installe l'add-on sous le nom `dc337d8e_freebuff` : le préfixe `dc337d8e` est le
-   début du SHA-1 de l'URL du dépôt, calculé sur l'URL telle que saisie (sans `/` final ni `.git`,
-   sinon le préfixe change). Ses données vivent donc dans `/data/apps/data/dc337d8e_freebuff`. Si vous
-   passez d'une copie locale installée depuis `/addons` (identifiant `local_freebuff`), déplacez
-   `/data/apps/data/local_freebuff` vers `/data/apps/data/dc337d8e_freebuff` avant de démarrer la
-   nouvelle installation, sinon vous repartez d'un `/data` vide (historique de conversations et
-   configuration Git compris).
+3. Home Assistant installs the add-on under the name `dc337d8e_freebuff`: the `dc337d8e` prefix is
+   the start of the SHA-1 of the repository URL, computed from the URL as entered (without a
+   trailing `/` or `.git`, otherwise the prefix changes). Its data therefore lives in
+   `/data/apps/data/dc337d8e_freebuff`. If you are coming from a local copy installed from
+   `/addons` (identifier `local_freebuff`), move `/data/apps/data/local_freebuff` to
+   `/data/apps/data/dc337d8e_freebuff` before starting the new installation, otherwise you start
+   from an empty `/data` (conversation history and Git configuration included).
 
-### Mises à jour
+### Updates
 
-Le fichier `renovate.json` à la racine du dépôt est lu par l'add-on
-[Renovate](https://github.com/pier-andre/renovate-ha-addon) : une mise à jour de dépendance arrive en
-pull request avec le `version:` de `freebuff/config.yaml` incrémenté et une ligne ajoutée dans
-`freebuff/CHANGELOG.md`. Après fusion, la boutique la propose au prochain « Vérifier les mises à jour ».
+The `renovate.json` file at the root of the repository is read by the
+[Renovate](https://github.com/pier-andre/renovate-ha-addon) add-on: a dependency update arrives as a
+pull request with the `version:` in `freebuff/config.yaml` bumped and a line added to
+`freebuff/CHANGELOG.md`. Once merged, the store offers it on the next "Check for updates".
 
-4. Ouvrez **Freebuff** dans la barre latérale, puis tapez `freebuff login` et suivez le lien affiché
-   sur votre téléphone ou votre ordinateur. Revenez dans le terminal : c'est connecté.
+4. Open **Freebuff** in the sidebar, then type `freebuff login` and follow the link shown on your
+   phone or computer. Go back to the terminal: you are logged in.
 
-## Utilisation
+## Usage
 
 ```bash
-cd /local_apps/mon-add-on     # un add-on en cours de développement
-fr                            # = freebuff --trust-agents : l'agent démarre
-ex                            # arrête l'add-on proprement depuis le terminal
+cd /local_apps/my-add-on       # an add-on you are developing
+fr                             # = freebuff --trust-agents: the agent starts
+ex                             # stops the add-on cleanly from the terminal
 ```
 
-Pour un dépôt GitHub classique, clonez-le dans `/share` (ou `/local_apps`) et lancez `freebuff` dedans.
+For a regular GitHub repository, clone it into `/share` (or `/local_apps`) and run `freebuff` in it.
 
-### Comment Freebuff reste gratuit
+### How Freebuff stays free
 
-Freebuff est financé par la **publicité**, et c'est assumé : des bandeaux publicitaires s'affichent
-dans la CLI — donc ici, dans le terminal web — **et** dans l'interface de discussion web de Freebuff.
-C'est ce qui permet de proposer le service sans abonnement. Prévoyez donc un terminal un peu plus
-bavard que la moyenne : ces encarts ne changent rien au fonctionnement de l'agent ni aux fichiers
-qu'il lit et modifie, et ils ne demandent aucune action de votre part.
+Freebuff is funded by **advertising**, and it says so: ad banners appear in the CLI — so, here, in
+the web terminal — **and** in Freebuff's web chat interface. That is what makes the service possible
+without a subscription. Expect a slightly more talkative terminal than usual: those slots change
+nothing about how the agent works or about the files it reads and writes, and they require no action
+from you.
 
-Pour soutenir l'add-on, créez votre compte depuis le lien de parrainage du mainteneur :
+To support the add-on, create your account from the maintainer's referral link:
 
 <https://freebuff.com/?ref=ref-094f56be-de2b-4d31-aa7e-6e3f6c49bc62&via=rewards_link>
 
-Le compte est gratuit dans tous les cas ; le lien indique seulement que vous venez d'ici.
+The account is free either way; the link only tells them you came from here.
 
-### Accès à Home Assistant
+### Home Assistant access
 
-Enregistrez un jeton longue durée d'un compte Home Assistant dédié dans l'option secrète
-`home_assistant_token`. Le terminal le reçoit dans `HOME_ASSISTANT_TOKEN` et `HA_TOKEN`, avec
-`HA_URL` construit depuis `home_assistant_url` et `home_assistant_port` (par défaut
-`http://homeassistant:8123`). Sans jeton, l'add-on se rabat sur le proxy Supervisor. Limitez les
-permissions du compte au strict nécessaire.
+Store a long-lived token from a dedicated Home Assistant account in the secret
+`home_assistant_token` option. The terminal receives it in `HOME_ASSISTANT_TOKEN` and `HA_TOKEN`,
+with `HA_URL` built from `home_assistant_url` and `home_assistant_port` (default
+`http://homeassistant:8123`). Without a token, the add-on falls back to the Supervisor proxy. Keep
+the account's permissions to the minimum.
 
-### Garde-fous de l'agent
+### Agent guardrails
 
-`/local_apps/AGENTS.md` rappelle à l'agent qu'il travaille dans un add-on Home Assistant et lui
-impose : changements non destructifs, sauvegarde avant écriture, validation de la configuration
-(`homeassistant.check_config`, équivalent de `ha core check`) avant de poursuivre, restauration
-immédiate si elle échoue, et interdiction de redémarrer Home Assistant.
+`/local_apps/AGENTS.md` reminds the agent that it works inside a Home Assistant add-on and requires:
+non-destructive changes, a backup before writing, configuration validation
+(`homeassistant.check_config`, the equivalent of `ha core check`) before going further, immediate
+restore if it fails, and no restarting Home Assistant.
 
-## Limites connues
+## Known limitations
 
-- La CLI Freebuff est interactive et nécessite le terminal web.
-- Dépend de l'architecture : `amd64` fonctionne ; `aarch64` (Raspberry Pi, HA Green/Yellow)
-  dépend de l'existence d'un binaire Linux ARM côté Freebuff. Si le build échoue sur ARM,
-  retirez `aarch64` de la liste `arch` dans `config.yaml`.
-- Freebuff est gratuit mais financé par la **publicité** : des bandeaux s'affichent dans la CLI et
-  dans l'interface de discussion web (voir [Comment Freebuff reste
-  gratuit](#comment-freebuff-reste-gratuit)).
-- Cet add-on n'est pas maintenu par Home Assistant ni par Freebuff : c'est un emballage communautaire.
+- The Freebuff CLI is interactive and needs the web terminal.
+- Architecture-dependent: `amd64` works; `aarch64` (Raspberry Pi, HA Green/Yellow) depends on a Linux
+  ARM binary existing on Freebuff's side. If the build fails on ARM, remove `aarch64` from the
+  `arch` list in `config.yaml`.
+- Freebuff is free but funded by **advertising**: banners appear in the CLI and in the web chat
+  interface (see [How Freebuff stays free](#how-freebuff-stays-free)).
+- This add-on is not maintained by Home Assistant or by Freebuff: it is a community wrapper.
