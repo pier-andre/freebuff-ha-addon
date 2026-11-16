@@ -218,7 +218,8 @@ if [[ -f "${agents_src}" ]]; then
     fi
 fi
 
-# Raccourcis et rappel affichés à l'ouverture de chaque terminal.
+# Raccourcis et rappel affichés à l'ouverture de chaque terminal, en français
+# puis en anglais (les commandes sont les mêmes dans les deux langues).
 # Le fichier est réécrit à chaque démarrage pour suivre les mises à jour de l'add-on.
 cat > /etc/profile.d/00-freebuff.sh <<'PROFILE'
 # `bash -l` (tmux) lit /etc/profile, donc ce fichier : les alias et la fonction
@@ -234,7 +235,7 @@ case "$-" in
         # « Arrêter », sans repasser par Home Assistant. Le Supervisor envoie
         # SIGTERM au conteneur et run.sh sort avec 0 (pas d'état d'erreur).
         freebuff_stop_addon() {
-            printf "Arret de l'add-on...\n"
+            printf "Arret de l'add-on... / Stopping the add-on...\n"
             curl -s -o /dev/null -X POST \
                 -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
                 'http://supervisor/addons/self/stop' || true
@@ -246,13 +247,21 @@ esac
 echo
 echo "  Freebuff - Home Assistant"
 echo "  Première utilisation :  freebuff login"
+echo "  First run :             freebuff login"
 echo "  Lancer l'agent :        fr      (= freebuff --trust-agents)"
+echo "  Start the agent :       fr      (= freebuff --trust-agents)"
 echo "  Arreter l'add-on :      ex      (= arret propre)"
+echo "  Stop the add-on :       ex      (= clean stop)"
 echo "  Coller du texte :       bouton Coller en haut a droite (telephone)"
+echo "  Paste text :            Paste button, top right (phone)"
 echo "  Add-ons locaux : /local_apps     Configuration HA : /homeassistant"
+echo "  Local add-ons :  /local_apps     HA configuration : /homeassistant"
 echo "  Garde-fous agent : /local_apps/AGENTS.md (lecture obligatoire)"
+echo "  Agent guardrails : /local_apps/AGENTS.md (required reading)"
 echo "  Outils MCP : /local_apps/.agents/mcp.json (sinon API REST)"
-echo "  Valider la config HA :  curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
+echo "  MCP tools :  /local_apps/.agents/mcp.json (else REST API)"
+echo "  Valider la config HA / Validate HA config :"
+echo "                          curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
 echo "                            -H 'Content-Type: application/json' -d '{}' \\"
 echo "                            \"\$HA_URL/api/services/homeassistant/check_config\""
 echo

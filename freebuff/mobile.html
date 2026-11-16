@@ -263,6 +263,73 @@
   var PASTE_FIELD_ID = "freebuff-paste-field";
   var pastePanel = null;
 
+  // --- Langue de l'interface --------------------------------------------------
+  // La page ttyd est servie dans une iframe Ingress, donc sur l'origine de Home
+  // Assistant : le Frontend y range la langue choisie par l'utilisateur dans
+  // `localStorage.selectedLanguage`. On la lit d'abord, puis la langue du
+  // navigateur, et on retombe sur l'anglais pour une langue non traduite. Rien
+  // n'est codé en dur dans les libellés : ils sont reposés sans rechargement
+  // quand la langue change.
+  var LABELS = {
+    fr: {
+      paste: "Coller",
+      pasteAria: "Coller le presse-papiers dans le terminal",
+      placeholder: "Collez ici (appui long) puis Envoyer",
+      cancel: "Annuler",
+      send: "Envoyer"
+    },
+    en: {
+      paste: "Paste",
+      pasteAria: "Paste the clipboard into the terminal",
+      placeholder: "Paste here (long press), then Send",
+      cancel: "Cancel",
+      send: "Send"
+    }
+  };
+
+  function detectLanguage() {
+    var candidates = [];
+    try {
+      var chosen = window.localStorage.getItem("selectedLanguage");
+      if (chosen) candidates.push(chosen);
+    } catch (error) {
+      // localStorage inaccessible : on se rabat sur le navigateur
+    }
+    if (navigator.languages && navigator.languages.length) {
+      candidates = candidates.concat(navigator.languages);
+    }
+    if (navigator.language) candidates.push(navigator.language);
+    for (var i = 0; i < candidates.length; i++) {
+      var code = String(candidates[i]).toLowerCase().slice(0, 2);
+      if (code === "fr") return "fr";
+      if (code === "en") return "en";
+    }
+    return "en";
+  }
+
+  var language = detectLanguage();
+  var strings = LABELS[language];
+
+  function applyLocale() {
+    language = detectLanguage();
+    strings = LABELS[language];
+    document.documentElement.lang = language;
+
+    var button = document.getElementById(PASTE_ID);
+    if (button) {
+      button.textContent = strings.paste;
+      button.setAttribute("aria-label", strings.pasteAria);
+    }
+    var field = document.getElementById(PASTE_FIELD_ID);
+    if (field) field.setAttribute("placeholder", strings.placeholder);
+    if (pastePanel) {
+      var cancel = pastePanel.querySelector(".freebuff-paste-cancel");
+      var send = pastePanel.querySelector(".freebuff-paste-send");
+      if (cancel) cancel.textContent = strings.cancel;
+      if (send) send.textContent = strings.send;
+    }
+  }
+
   function sendToTerminal(text) {
     if (!text) return false;
     var term = window.term;
@@ -325,13 +392,19 @@
   }
 
   function buildPasteUi() {
-    if (!document.body || document.getElementById(PASTE_ID)) return;
+    if (!document.body) return;
+    // Déjà construit : on repose seulement les libellés, la langue du profil a
+    // pu changer pendant le chargement de la page.
+    if (document.getElementById(PASTE_ID)) {
+      applyLocale();
+      return;
+    }
 
     var button = document.createElement("button");
     button.id = PASTE_ID;
     button.type = "button";
-    button.textContent = "Coller";
-    button.setAttribute("aria-label", "Coller le presse-papiers dans le terminal");
+    button.textContent = strings.paste;
+    button.setAttribute("aria-label", strings.pasteAria);
     button.addEventListener("click", function () {
       if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
         navigator.clipboard.readText().then(function (text) {
@@ -348,10 +421,10 @@
     pastePanel.innerHTML =
       '<textarea id="' + PASTE_FIELD_ID + '" rows="3" ' +
         'autocapitalize="off" autocorrect="off" spellcheck="false" ' +
-        'placeholder="Collez ici (appui long) puis Envoyer"></textarea>' +
+        'placeholder="' + strings.placeholder + '"></textarea>' +
       '<div class="freebuff-paste-actions">' +
-        '<button type="button" class="freebuff-paste-cancel">Annuler</button>' +
-        '<button type="button" class="freebuff-paste-send">Envoyer</button>' +
+        '<button type="button" class="freebuff-paste-cancel">' + strings.cancel + '</button>' +
+        '<button type="button" class="freebuff-paste-send">' + strings.send + '</button>' +
       '</div>';
 
     pastePanel.querySelector(".freebuff-paste-send")
@@ -361,6 +434,18 @@
 
     document.body.appendChild(button);
     document.body.appendChild(pastePanel);
+
+    // La langue peut changer sans que l'iframe Ingress soit rechargée : `storage`
+    // arrive depuis le document de Home Assistant (même origine), et au retour
+    // sur la page on relit la valeur au cas où l'événement serait passé.
+    window.addEventListener("storage", function (event) {
+      if (!event.key || event.key === "selectedLanguage") applyLocale();
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) applyLocale();
+    });
+
+    applyLocale();
   }
 
   if (document.readyState === "loading") {

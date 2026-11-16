@@ -25,7 +25,10 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
   crans de molette vers tmux, historique de 50 000 lignes), balise `viewport`, champ de saisie
   compatible avec les claviers à prédiction (SwiftKey, Gboard), hauteur calée sur la vue visuelle
   pour que la ligne de saisie reste au-dessus du clavier, et bouton **Coller** qui évite de taper un
-  texte caractère par caractère.
+  texte caractère par caractère ;
+- parle **français et anglais** : la bannière du terminal répète chaque ligne dans les deux langues,
+  et les contrôles de la page mobile (**Coller**/**Paste**, **Annuler**/**Cancel**,
+  **Envoyer**/**Send**) suivent la langue du profil Home Assistant, puis celle du navigateur.
 
 ## Installation
 
@@ -69,6 +72,20 @@ ex                            # arrête l'add-on proprement depuis le terminal
 
 Pour un dépôt GitHub classique, clonez-le dans `/share` (ou `/local_apps`) et lancez `freebuff` dedans.
 
+### Comment Freebuff reste gratuit
+
+Freebuff est financé par la **publicité**, et c'est assumé : des bandeaux publicitaires s'affichent
+dans la CLI — donc ici, dans le terminal web — **et** dans l'interface de discussion web de Freebuff.
+C'est ce qui permet de proposer le service sans abonnement. Prévoyez donc un terminal un peu plus
+bavard que la moyenne : ces encarts ne changent rien au fonctionnement de l'agent ni aux fichiers
+qu'il lit et modifie, et ils ne demandent aucune action de votre part.
+
+Pour soutenir l'add-on, créez votre compte depuis le lien de parrainage du mainteneur :
+
+<https://freebuff.com/?ref=ref-094f56be-de2b-4d31-aa7e-6e3f6c49bc62&via=rewards_link>
+
+Le compte est gratuit dans tous les cas ; le lien indique seulement que vous venez d'ici.
+
 ### Accès à Home Assistant
 
 Enregistrez un jeton longue durée d'un compte Home Assistant dédié dans l'option secrète
@@ -90,5 +107,7 @@ immédiate si elle échoue, et interdiction de redémarrer Home Assistant.
 - Dépend de l'architecture : `amd64` fonctionne ; `aarch64` (Raspberry Pi, HA Green/Yellow)
   dépend de l'existence d'un binaire Linux ARM côté Freebuff. Si le build échoue sur ARM,
   retirez `aarch64` de la liste `arch` dans `config.yaml`.
-- Freebuff est financé par des bandeaux publicitaires affichés dans la CLI.
+- Freebuff est gratuit mais financé par la **publicité** : des bandeaux s'affichent dans la CLI et
+  dans l'interface de discussion web (voir [Comment Freebuff reste
+  gratuit](#comment-freebuff-reste-gratuit)).
 - Cet add-on n'est pas maintenu par Home Assistant ni par Freebuff : c'est un emballage communautaire.

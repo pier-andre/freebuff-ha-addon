@@ -119,6 +119,24 @@ s'arrête sans repasser par Home Assistant. L'arrêt est propre dans les deux ca
 **Informations** affiche un arrêt normal au lieu d'un état d'erreur. Si `ex` semble ne rien faire, l'add-on est peut-être déjà arrêté, ou le Supervisor a refusé la requête (elle
 n'est alors pas visible, le conteneur n'ayant pas encore été arrêté).
 
+## Langue de l'interface
+
+L'add-on est **bilingue**, français et anglais, sans option à régler :
+
+- la bannière affichée à l'ouverture de chaque terminal donne chaque ligne en français puis en
+  anglais — les commandes `fr` et `ex` sont les mêmes dans les deux langues ;
+- le bouton **Coller**, le champ de collage et les boutons **Annuler** / **Envoyer** de la page du
+  terminal suivent la langue de l'utilisateur. La page lit `selectedLanguage` dans `localStorage`
+  (la langue choisie dans le profil Home Assistant), puis la langue du navigateur, et retombe sur
+  l'anglais pour une langue non traduite. Les libellés se mettent à jour sans recharger la page
+  quand la langue change, et l'attribut `lang` de la page suit.
+
+**English** — The add-on UI is bilingual. The banner printed in every terminal repeats each line in
+English (`fr` and `ex` are unchanged), and the controls injected into the ttyd page (**Paste**,
+**Cancel**, **Send**, and the paste field) follow the Home Assistant profile language
+(`selectedLanguage` in `localStorage`), then the browser language, defaulting to English. Labels
+refresh without a reload when the profile language changes.
+
 ## Téléphone et tablette
 
 La page servie par ttyd reçoit au build un petit fragment (`freebuff/mobile.html`, inséré par
@@ -142,8 +160,8 @@ styles et des écouteurs d'événements ajoutés à la page.
   automatique de Safari. Autocorrection et majuscule automatique sont désactivées (les commandes
   sont sensibles à la casse) et `enterkeyhint="send"` annonce une touche d'envoi.
 
-- **Collage** : un bouton **Coller** est fixé en haut à droite du terminal — donc au-dessus du
-  clavier, jamais recouvert. Il envoie le presse-papiers au terminal en une fois : plus besoin de
+- **Collage** : un bouton **Coller** (`Paste` en anglais) est fixé en haut à droite du terminal —
+  donc au-dessus du clavier, jamais recouvert. Il envoie le presse-papiers au terminal en une fois : plus besoin de
   taper caractère par caractère, ce que le champ de saisie invisible de xterm rendait inévitable au
   doigt. En HTTPS (Ingress), le presse-papiers est lu directement ; si le navigateur refuse l'accès
   (page servie en HTTP, permission refusée), un champ de collage s'ouvre en haut de la page :

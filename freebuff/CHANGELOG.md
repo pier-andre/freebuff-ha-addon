@@ -5,6 +5,14 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.17
+- 2026-11-16 — Interface bilingue, français et anglais : la bannière du terminal répète chaque ligne
+  en anglais (`fr` et `ex` inchangés) et les contrôles de la page mobile — **Coller**/**Paste**,
+  champ de collage, **Annuler**/**Cancel**, **Envoyer**/**Send** — suivent la langue du profil Home
+  Assistant (`selectedLanguage` dans `localStorage`), puis celle du navigateur, avec l'anglais par
+  défaut. Les libellés et l'attribut `lang` de la page se mettent à jour sans rechargement quand la
+  langue change.
+
 ## 0.2.16
 - 2026-11-15 — Arrêt propre : `run.sh` lance ttyd en arrière-plan et relaie SIGTERM/SIGINT, puis
   sort avec 0. Sans trappe, bash (PID 1) diffère le signal tant que ttyd tourne, le conteneur est
