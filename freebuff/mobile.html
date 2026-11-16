@@ -264,10 +264,12 @@
   var pastePanel = null;
 
   // --- Langue de l'interface --------------------------------------------------
-  // La page ttyd est servie dans une iframe Ingress, donc sur l'origine de Home
-  // Assistant : le Frontend y range la langue choisie par l'utilisateur dans
-  // `localStorage.selectedLanguage`. On la lit d'abord, puis la langue du
-  // navigateur, et on retombe sur l'anglais pour une langue non traduite. Rien
+  // La langue de l'interface Home Assistant vit dans le profil utilisateur, côté
+  // serveur : `localStorage.selectedLanguage` n'existe que si un choix a été
+  // enregistré sur cet appareil, et le navigateur peut très bien être dans une
+  // autre langue que le profil. La source fiable est donc le document qui encadre
+  // cette page : dans l'Ingress, ttyd est servi dans une iframe de même origine,
+  // et l'attribut `lang` de son `<html>` porte la langue réellement active. Rien
   // n'est codé en dur dans les libellés : ils sont reposés sans rechargement
   // quand la langue change.
   var LABELS = {
@@ -287,23 +289,81 @@
     }
   };
 
+  var UI_VERSION = "0.2.18";
+  var languageSource = "default";
+
+  function normalizeLanguage(code) {
+    var short = String(code || "").toLowerCase().slice(0, 2);
+    return short === "fr" || short === "en" ? short : "";
+  }
+
+  function parentWindow() {
+    try {
+      if (window.parent && window.parent !== window) return window.parent;
+    } catch (error) {
+      // parent inaccessible : page ouverte hors iframe
+    }
+    return null;
+  }
+
   function detectLanguage() {
+    var parent = parentWindow();
+    // 1. Langue de l'interface qui encadre cette page (profil utilisateur).
+    if (parent) {
+      try {
+        var parentLang = normalizeLanguage(parent.document.documentElement.lang);
+        if (parentLang) {
+          languageSource = "parent-page";
+          return parentLang;
+        }
+      } catch (error) {
+        // document parent illisible (origine différente) : on continue
+      }
+    }
+
+    // 2. Choix enregistré dans localStorage, d'abord ici puis chez le parent.
     var candidates = [];
+    var sources = [];
     try {
       var chosen = window.localStorage.getItem("selectedLanguage");
-      if (chosen) candidates.push(chosen);
+      if (chosen) {
+        candidates.push(chosen);
+        sources.push("profile");
+      }
     } catch (error) {
       // localStorage inaccessible : on se rabat sur le navigateur
     }
+    if (parent) {
+      try {
+        var parentChosen = parent.localStorage.getItem("selectedLanguage");
+        if (parentChosen) {
+          candidates.push(parentChosen);
+          sources.push("profile");
+        }
+      } catch (error) {
+        // idem
+      }
+    }
+
+    // 3. Langues du navigateur, en dernier.
+    var browser = [];
     if (navigator.languages && navigator.languages.length) {
-      candidates = candidates.concat(navigator.languages);
+      browser = Array.prototype.slice.call(navigator.languages);
     }
-    if (navigator.language) candidates.push(navigator.language);
-    for (var i = 0; i < candidates.length; i++) {
-      var code = String(candidates[i]).toLowerCase().slice(0, 2);
-      if (code === "fr") return "fr";
-      if (code === "en") return "en";
+    if (navigator.language) browser.push(navigator.language);
+    for (var i = 0; i < browser.length; i++) {
+      candidates.push(browser[i]);
+      sources.push("browser");
     }
+
+    for (var j = 0; j < candidates.length; j++) {
+      var code = normalizeLanguage(candidates[j]);
+      if (code) {
+        languageSource = sources[j];
+        return code;
+      }
+    }
+    languageSource = "default";
     return "en";
   }
 
@@ -314,6 +374,7 @@
     language = detectLanguage();
     strings = LABELS[language];
     document.documentElement.lang = language;
+    document.documentElement.setAttribute("data-freebuff-ui", UI_VERSION);
 
     var button = document.getElementById(PASTE_ID);
     if (button) {
@@ -327,6 +388,14 @@
       var send = pastePanel.querySelector(".freebuff-paste-send");
       if (cancel) cancel.textContent = strings.cancel;
       if (send) send.textContent = strings.send;
+    }
+
+    // Trace unique, pour savoir d'où vient la langue quand un libellé surprend.
+    var marker = UI_VERSION + "/" + language + "/" + languageSource;
+    if (document.documentElement.getAttribute("data-freebuff-locale") !== marker) {
+      document.documentElement.setAttribute("data-freebuff-locale", marker);
+      console.info("Freebuff UI " + UI_VERSION + " — language « " + language +
+        " » from " + languageSource);
     }
   }
 

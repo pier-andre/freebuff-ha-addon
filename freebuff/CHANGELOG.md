@@ -5,6 +5,14 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.18
+- 2026-11-16 — Correctif de détection de langue : la page ne consultait que `selectedLanguage` dans
+  `localStorage`, or le profil Home Assistant ne remplit cette clé que si une langue a été choisie
+  sur l'appareil. Un profil en anglais sur un téléphone en français restait donc en français. La
+  page lit désormais d'abord l'attribut `lang` de la page Home Assistant qui l'encadre, puis
+  `selectedLanguage` (cette page puis le parent), puis les langues du navigateur. Version et source
+  de la langue tracées dans `data-freebuff-ui` / `data-freebuff-locale` et dans la console.
+
 ## 0.2.17
 - 2026-11-16 — Interface bilingue, français et anglais : la bannière du terminal répète chaque ligne
   en anglais (`fr` et `ex` inchangés) et les contrôles de la page mobile — **Coller**/**Paste**,

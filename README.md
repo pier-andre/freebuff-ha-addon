@@ -28,7 +28,7 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
   texte caractère par caractère ;
 - parle **français et anglais** : la bannière du terminal répète chaque ligne dans les deux langues,
   et les contrôles de la page mobile (**Coller**/**Paste**, **Annuler**/**Cancel**,
-  **Envoyer**/**Send**) suivent la langue du profil Home Assistant, puis celle du navigateur.
+  **Envoyer**/**Send**) suivent la langue de l'interface Home Assistant, puis celle du navigateur.
 
 ## Installation
 

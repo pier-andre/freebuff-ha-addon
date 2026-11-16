@@ -126,16 +126,21 @@ L'add-on est **bilingue**, français et anglais, sans option à régler :
 - la bannière affichée à l'ouverture de chaque terminal donne chaque ligne en français puis en
   anglais — les commandes `fr` et `ex` sont les mêmes dans les deux langues ;
 - le bouton **Coller**, le champ de collage et les boutons **Annuler** / **Envoyer** de la page du
-  terminal suivent la langue de l'utilisateur. La page lit `selectedLanguage` dans `localStorage`
-  (la langue choisie dans le profil Home Assistant), puis la langue du navigateur, et retombe sur
-  l'anglais pour une langue non traduite. Les libellés se mettent à jour sans recharger la page
-  quand la langue change, et l'attribut `lang` de la page suit.
+  terminal suivent la langue de l'interface Home Assistant. La page lit d'abord l'attribut `lang`
+  de la page qui l'encadre — le Frontend y met la langue du profil utilisateur —, puis
+  `selectedLanguage` dans `localStorage`, que le profil ne remplit que si un choix a été enregistré
+  sur cet appareil, puis les langues du navigateur, et retombe sur l'anglais. Les libellés se
+  mettent à jour sans recharger la page quand la langue change, et l'attribut `lang` de la page
+  suit. La version et la langue retenues sont tracées dans la console et dans les attributs
+  `data-freebuff-ui` / `data-freebuff-locale` de `<html>`.
 
 **English** — The add-on UI is bilingual. The banner printed in every terminal repeats each line in
 English (`fr` and `ex` are unchanged), and the controls injected into the ttyd page (**Paste**,
 **Cancel**, **Send**, and the paste field) follow the Home Assistant profile language
-(`selectedLanguage` in `localStorage`), then the browser language, defaulting to English. Labels
-refresh without a reload when the profile language changes.
+(the `lang` attribute of the enclosing Home Assistant page, then `selectedLanguage` in
+`localStorage`, which the profile only fills when a choice was saved on that device), then the
+browser language, defaulting to English. Labels refresh without a reload when the profile language
+changes.
 
 ## Téléphone et tablette
 
