@@ -5,6 +5,7 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+- 2026-11-17 — `nodejs/node` 26.13.0 → 26.13.1 (mise à jour correctif)
 ## 0.2.18
 - 2026-11-16 — Correctif de détection de langue : la page ne consultait que `selectedLanguage` dans
   `localStorage`, or le profil Home Assistant ne remplit cette clé que si une langue a été choisie
