@@ -1,5 +1,5 @@
 name: "Freebuff CLI"
-version: "0.2.18"
+version: "0.2.19"
 slug: "freebuff"
 description: "Agent de code Freebuff dans un terminal web, pour coder vos add-ons et vos dépôts Git"
 url: "https://github.com/pier-andre/freebuff-ha-addon/tree/main/freebuff"
@@ -18,6 +18,18 @@ startup: application
 # aucun jeton longue durée n'est configuré : l'agent peut alors valider la
 # configuration HA (homeassistant.check_config) sans qu'aucun secret ne soit stocké.
 homeassistant_api: true
+# Journaux des autres add-ons, du Supervisor, de Home Assistant Core et de
+# l'hôte : l'API Supervisor (`/addons/<slug>/logs`, `/supervisor/logs`,
+# `/core/logs`, `/host/logs`) ne sert ces chemins qu'aux add-ons déclarant
+# `hassio_api` et le rôle `manager`. Sans ces deux lignes, seuls
+# `/addons/self/...` et `/info` répondent (403 constaté sur `/addons`, `/core`,
+# `/supervisor` en 0.2.18) : c'est ce qui suffisait à `ex`, pas à la lecture des
+# journaux. Le rôle `manager` abaisse la note de sécurité affichée par Home
+# Assistant et ouvre d'autres chemins que les journaux (`/store`, `/docker`,
+# `/backups`, `/host`) : l'add-on ne s'en sert que pour les journaux, et son
+# panneau reste réservé aux administrateurs (`panel_admin`).
+hassio_api: true
+hassio_role: manager
 map:
   - local_apps:rw
   - homeassistant_config:rw

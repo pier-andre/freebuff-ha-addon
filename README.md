@@ -21,6 +21,9 @@ Assistant, and can hold a dedicated token for the local Home Assistant API.
   (`/api/mcp`), an equivalent custom component, or the HA-MCP add-on from the Marketplace through
   `mcp_url` — to edit dashboards, YAML files with a backup, and traces; the REST API remains the
   fallback;
+- reads the logs of your other add-ons, of Home Assistant Core and of the Supervisor from the
+  terminal (`apps`, `applog <slug|core|supervisor|host>`), which is why it asks for `hassio_api`
+  with the `manager` role;
 - starts the agent with one word (`fr`, i.e. `freebuff --trust-agents`) and stops the add-on from
   the terminal (`ex`); both stop cleanly, with no error state in the **Log** tab;
 - adapts the terminal to a phone: finger scrolling of the conversation (swipe translated into wheel
@@ -108,6 +111,9 @@ restore if it fails, and no restarting Home Assistant.
 - Architecture-dependent: `amd64` works; `aarch64` (Raspberry Pi, HA Green/Yellow) depends on a Linux
   ARM binary existing on Freebuff's side. If the build fails on ARM, remove `aarch64` from the
   `arch` list in `config.yaml`.
+- Reading other add-ons' logs needs `hassio_api: true` with `hassio_role: manager`, which lowers the
+  security rating Home Assistant shows for the add-on: remove those two lines from `config.yaml`
+  and rebuild to drop it, and `applog` will answer `HTTP 403`.
 - Freebuff is free but funded by **advertising**: banners appear in the CLI and in the web chat
   interface (see [How Freebuff stays free](#how-freebuff-stays-free)).
 - This add-on is not maintained by Home Assistant or by Freebuff: it is a community wrapper.

@@ -241,6 +241,51 @@ case "$-" in
                 'http://supervisor/addons/self/stop' || true
         }
         alias ex='freebuff_stop_addon'
+
+        # --- Journaux --------------------------------------------------------
+        # L'API Supervisor rend les journaux en texte brut. `apps` liste les
+        # add-ons installes ; `applog <slug>` lit celui d'un add-on et
+        # `applog core|supervisor|host` ceux de Home Assistant, du Supervisor et
+        # de l'hote. Le role `manager` (voir config.yaml) est necessaire : sans
+        # lui le Supervisor repond 403, ce que la fonction affiche au lieu de
+        # laisser un silence.
+        apps() {
+            local json
+            json="$(curl -sS -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+                http://supervisor/addons)" || return 1
+            if ! printf '%s' "${json}" | jq -e '.result == "ok"' >/dev/null 2>&1; then
+                printf 'Liste refusee : %s\n' "$(printf '%s' "${json}" | head -c 200)" >&2
+                return 1
+            fi
+            printf '%s' "${json}" \
+                | jq -r '.data.addons[] | .slug + "\t" + .name + (if .state == "started" then "" else " (" + .state + ")" end)' \
+                | awk -F'\t' '{ printf "%-34s %s\n", $1, $2 }'
+        }
+
+        applog() {
+            local target="${1:-}" lines="${2:-200}" path file status
+            case "${target}" in
+                ''|list)
+                    printf 'Usage : applog <slug|core|supervisor|host> [lignes]\n'
+                    printf 'Add-ons installes :\n'
+                    apps
+                    return 0
+                    ;;
+                core|supervisor|host) path="/${target}/logs" ;;
+                *) path="/addons/${target}/logs" ;;
+            esac
+            file="$(mktemp)"
+            status="$(curl -sS -o "${file}" -w '%{http_code}' \
+                -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+                "http://supervisor${path}")" || true
+            if [[ "${status}" != '200' ]]; then
+                printf 'Refuse (HTTP %s) : %s\n' "${status}" "$(head -c 200 "${file}")" >&2
+                rm -f "${file}"
+                return 1
+            fi
+            tail -n "${lines}" "${file}"
+            rm -f "${file}"
+        }
         ;;
 esac
 
@@ -260,6 +305,10 @@ echo "  Garde-fous agent : /local_apps/AGENTS.md (lecture obligatoire)"
 echo "  Agent guardrails : /local_apps/AGENTS.md (required reading)"
 echo "  Outils MCP : /local_apps/.agents/mcp.json (sinon API REST)"
 echo "  MCP tools :  /local_apps/.agents/mcp.json (else REST API)"
+echo "  Journaux :              applog <slug|core|supervisor|host>"
+echo "  Logs :                  applog <slug|core|supervisor|host>"
+echo "  Add-ons installes :     apps"
+echo "  Installed add-ons :     apps"
 echo "  Valider la config HA / Validate HA config :"
 echo "                          curl -s -H \"Authorization: Bearer \$HA_TOKEN\" \\"
 echo "                            -H 'Content-Type: application/json' -d '{}' \\"

@@ -109,6 +109,8 @@ Deux commandes sont disponibles dans le terminal, définies au démarrage dans `
 | --- | --- |
 | `fr` | lance l'agent dans le dossier courant, avec `--trust-agents` (équivalent de `freebuff --trust-agents`) |
 | `ex` | arrête l'add-on depuis le terminal (court pour *exit*), comme le bouton **Arrêter** de Home Assistant |
+| `apps` | liste les add-ons installés (slug, nom, état) |
+| `applog <slug\|core\|supervisor\|host>` | journaux : 200 dernières lignes par défaut, un nombre en second argument |
 
 `fr` charge `.agents/` — dont le `mcp.json` écrit par l'add-on — sans reposer la question à chaque
 démarrage. Pour changer de dossier, `cd` puis `fr`.
@@ -118,6 +120,32 @@ s'arrête sans repasser par Home Assistant. L'arrêt est propre dans les deux ca
 **Arrêter** ou `ex` : `run.sh` transmet le signal à ttyd et sort avec le code 0, donc l'onglet
 **Informations** affiche un arrêt normal au lieu d'un état d'erreur. Si `ex` semble ne rien faire, l'add-on est peut-être déjà arrêté, ou le Supervisor a refusé la requête (elle
 n'est alors pas visible, le conteneur n'ayant pas encore été arrêté).
+
+## Journaux des add-ons, de Core et du Supervisor
+
+Le terminal lit les journaux par l'API du Supervisor, qui les rend en texte brut :
+
+| Commande | Contenu |
+| --- | --- |
+| `apps` | add-ons installés : slug, nom, état |
+| `applog <slug>` | 200 dernières lignes de cet add-on |
+| `applog <slug> 1000` | 1 000 dernières lignes |
+| `applog core` | journal de Home Assistant Core |
+| `applog supervisor` | journal du Supervisor |
+| `applog host` | journal de l'hôte (systemd) |
+
+`applog` sans argument affiche l'usage et la liste des slugs. Le journal de Core reste aussi lisible
+dans `/homeassistant/home-assistant.log`, et l'agent préfère `applog` : une seule commande pour les
+trois sources, et le journal du Supervisor n'existe nulle part sur le disque monté.
+
+Pour cela l'add-on déclare `hassio_api: true` et `hassio_role: manager`. Le Supervisor ne sert
+`/addons/<slug>/logs`, `/core/logs`, `/supervisor/logs` et `/host/logs` qu'à ce rôle : sans lui,
+seul `/addons/self/...` répond, ce qui suffisait à `ex` mais renvoyait `403` sur tout le reste
+(constaté en 0.2.18). **Conséquence à connaître** : `manager` abaisse la note de sécurité que Home
+Assistant affiche pour l'add-on, et ouvre d'autres chemins que les journaux (`/store`, `/docker`,
+`/backups`, `/host`). L'add-on ne s'en sert que pour les journaux, et son panneau reste réservé aux
+administrateurs ; si cette permission vous gêne, retirez les deux lignes de `config.yaml` dans
+votre copie du dépôt et reconstruisez : `applog` répondra alors `Refuse (HTTP 403)`.
 
 ## Langue de l'interface
 

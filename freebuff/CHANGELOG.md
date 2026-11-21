@@ -5,6 +5,16 @@ ligne dans « Non publié » et incrémente simultanément le `version:` de `con
 
 ## Non publié
 
+## 0.2.19
+- 2026-11-21 — Journaux accessibles depuis le terminal : `apps` liste les add-ons installés,
+  `applog <slug>` lit les leurs, `applog core|supervisor|host` ceux de Home Assistant, du
+  Supervisor et de l'hôte. L'API Supervisor ne sert ces chemins qu'aux add-ons déclarant
+  `hassio_api: true` et `hassio_role: manager` : sans eux, seuls `/addons/self/...` et `/info`
+  répondaient (`403` constaté sur `/addons`, `/core` et `/supervisor`). Le rôle abaisse la note de
+  sécurité de l'add-on, d'où la note dans DOCS.md et dans les limites connues des deux README.
+  `AGENTS.md` gagne une section « Journaux » : lecture libre, jamais de jeton recopié, pas de
+  redémarrage pour « voir les logs ».
+
 ## 0.2.18
 - 2026-11-16 — Correctif de détection de langue : la page ne consultait que `selectedLanguage` dans
   `localStorage`, or le profil Home Assistant ne remplit cette clé que si une langue a été choisie

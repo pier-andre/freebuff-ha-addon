@@ -20,6 +20,8 @@ et peut recevoir un jeton dédié pour accéder à l'API locale de Home Assistan
 - ajoute les outils MCP de Home Assistant quand un serveur MCP est disponible — intégration intégrée
   (`/api/mcp`), composant équivalent, ou app HA-MCP du Marketplace via `mcp_url` — pour éditer les
   tableaux de bord, les fichiers YAML avec sauvegarde et les traces ; l'API REST reste le repli ;
+- lit les journaux de vos autres add-ons, de Home Assistant Core et du Supervisor depuis le
+  terminal (`apps`, `applog <slug|core|supervisor|host>`), d'où `hassio_api` et le rôle `manager` ;
 - lance l'agent d'un mot (`fr`, soit `freebuff --trust-agents`) et arrête l'add-on depuis le
   terminal (`ex`) ; l'arrêt est propre dans les deux cas, sans état d'erreur dans l'onglet
   **Informations** ;
@@ -109,6 +111,9 @@ immédiate si elle échoue, et interdiction de redémarrer Home Assistant.
 - Dépend de l'architecture : `amd64` fonctionne ; `aarch64` (Raspberry Pi, HA Green/Yellow)
   dépend de l'existence d'un binaire Linux ARM côté Freebuff. Si le build échoue sur ARM,
   retirez `aarch64` de la liste `arch` dans `config.yaml`.
+- La lecture des journaux des autres add-ons exige `hassio_api: true` et `hassio_role: manager`,
+  ce qui abaisse la note de sécurité affichée par Home Assistant : retirez ces deux lignes de
+  `config.yaml` et reconstruisez pour ne pas l'accorder, `applog` répondra `HTTP 403`.
 - Freebuff est gratuit mais financé par la **publicité** : des bandeaux s'affichent dans la CLI et
   dans l'interface de discussion web (voir [Comment Freebuff reste
   gratuit](#comment-freebuff-reste-gratuit)).

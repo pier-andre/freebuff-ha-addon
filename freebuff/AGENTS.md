@@ -58,6 +58,29 @@ Après validation réussie, recharge ce qui est nécessaire plutôt que de redé
 `automation.reload`, `script.reload`, `scene.reload`, `template.reload` via
 `POST $HA_URL/api/services/<domaine>/reload`.
 
+## Journaux
+
+L'API du Supervisor les renvoie **en texte brut** ; l'add-on déclare `hassio_api: true` et le rôle
+`manager`, ce qui couvre ces chemins :
+
+| Commande | Contenu |
+| --- | --- |
+| `apps` | add-ons installés : slug, nom, état |
+| `applog <slug>` | les 200 dernières lignes d'un add-on |
+| `applog <slug> 1000` | les 1 000 dernières lignes |
+| `applog core` | journal de Home Assistant Core |
+| `applog supervisor` | journal du Supervisor |
+| `applog host` | journal de l'hôte (systemd) |
+
+`applog` sans argument affiche l'usage et la liste des slugs. Le journal de Core reste aussi lisible
+à `/homeassistant/home-assistant.log`, et l'outil MCP `get_error_log` fait la même chose quand le
+serveur MCP est disponible.
+
+Règles : la lecture est libre, il n'y a pas d'écriture. Ne recopie jamais une ligne de journal
+contenant un jeton, un mot de passe ou une URL avec identifiants dans un fichier, un commit ou ta
+réponse : ces lignes existent, notamment dans les erreurs de connexion. Ne redémarre ni n'arrête un
+add-on, le Supervisor ou Home Assistant pour « voir les journaux » : lis-les.
+
 ## Serveur MCP (si présent)
 
 Quand `/local_apps/.agents/mcp.json` existe et que le serveur répond, tu disposes en plus des outils
